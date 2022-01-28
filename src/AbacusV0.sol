@@ -69,16 +69,16 @@ constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
     /// @notice Initialize the wrapped ETH contract instance with the wrapped native token address for the chain.
     _wnato=WETH(_wnatoAddress);
 
-    /// @notice Initialize the uniV2Router address.
+    /// @notice Initialize the UniV2Router address.
     UniV2RouterAddress=_uniV2Router;
 
-    /// @notice Initialize the uniV3Router address.
+    /// @notice Initialize the UniV3Router address.
     UniV3RouterAddress=_uniV3Router;
 
-    /// @notice Initialize the uniV2Router contract instance.
+    /// @notice Initialize the UniV2Router contract instance.
     UniV2Router = IUniV2Router(_uniV2Router);
 
-    /// @notice Initialize the uniV3Router contract instance.
+    /// @notice Initialize the UniV3Router contract instance.
     UniV3Router = ISwapRouter(_uniV3Router);
 
 
