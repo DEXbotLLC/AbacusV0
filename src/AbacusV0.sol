@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: TODO: update-
+// SPDX-License-Identifier: TODO
 pragma solidity >=0.8.10;
 
 import "../lib/IUniswapV2Pair.sol";
