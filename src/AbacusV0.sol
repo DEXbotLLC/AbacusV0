@@ -19,11 +19,13 @@ contract AbacusV0 {
     
     /// @notice Address of a UniV2 compatible router to swap tokens. This can be set to any UniV2 compatible router (Ex. UniswapV2 or Sushiswap on Ethereum, Pancakeswap on Binance Smart Chain (BSC)).
     address public UniV2RouterAddress; 
+
     /// @notice Instance of a UniV2 compatible router to swap tokens.
     IUniswapV2Router02 UniV2Router; 
 
     /// @notice Address of the UniV3 router to swap tokens.
     address public UniV3RouterAddress; 
+
     /// @notice Instance of the UniV3 router to swap tokens.
     ISwapRouter UniV3Router;
 
@@ -33,11 +35,14 @@ contract AbacusV0 {
     /// @notice Wrapped ETH contract instance to unwrap WETH to ETH. While this variable is named WETH, it could be any native token depending on the chain the contract is deployed to (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
     WETH private _wnato;
 
-    /// @notice divided by 1000 during calculations so the percent is actually a maximum of 3% during the calculation
-    uint constant MAX_ABACUS_FEE_MUL_1000 = 30 ;
+    /// @notice After a swap transaction is completed, a small fee is subtracted from the amountOut. This fee is for the off-chain logic/computations to curate automated swap transactions for an externally owned wallet EOA.
+    /// @notice During the fee calculation, this value is divided by 1000 to effectively multiply by a decimal (Ex. If abacusFeeMul1000 is 25, then amountOut*(abacusFeeMul1000/1000) is equivalent to amountOut*.025).
+    uint public abacusFeeMul1000;
 
-    /// @notice divided by 1000 during calculations so the percent is actually 2.5% during the calculation
-    uint abacusFeeMul1000 =25;
+    /// @notice The maximum abacus fee that can be set. 
+    /// @notice The max fee is 3% and the abacus fee can never be set above this value.
+    /// @notice This value is divided by 1000 during calculations so with the maximum fee being 30, it can be expressed during calculations as MAX_ABACUS_FEE_MUL_1000/1000 which equals 30/1000 or .03 or 3%.
+    uint constant MAX_ABACUS_FEE_MUL_1000 = 30 ;
 
     /// @notice The EOA address that the abacus fee is sent to. This is initially set to the msg.sender.
     address private _abacusWallet;
@@ -49,6 +54,8 @@ constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
     _owner = msg.sender;
     _abacusWallet=msg.sender;
     
+    abacusFeeMul1000=25;
+
     //initialize weth
     _wnato=WETH(_wnatoAddress);
     //initialize wrapped native token address
@@ -62,6 +69,9 @@ constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
     UniV2Router = IUniV2Router(_uniV2Router);
     //initialize univ3router
     UniV3Router = ISwapRouter(_uniV3Router);
+
+
+    
 }
 
 
