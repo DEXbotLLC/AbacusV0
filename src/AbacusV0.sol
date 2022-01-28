@@ -17,7 +17,7 @@ contract AbacusV0 {
     /// @notice The EOA address that owns the contract. This is set to the msg.sender initially at deployment. In this contract, the _owner can update the abacus fee (which can never be > 3%), set the abacus wallet or transfer ownership. 
     address private _owner;
     
-    /// @notice Address of a UniV2 compatible router to swap tokens. This can be set to any UniV2 compatible router (Ex. UniswapV2 or Sushiswap on Ethereum, Pancakeswap on Binance Smart Chain (BSC)).
+    /// @notice Address of a UniV2 compatible router to swap tokens. This can be set to any UniV2 compatible router (Depending on the chain, this could be Uniswap on Ethereum, Uniswap on Polygon, Pancakeswap on Binance Smart Chain (BSC), ect.).
     address public UniV2RouterAddress; 
 
     /// @notice Instance of a UniV2 compatible router to swap tokens.
@@ -48,26 +48,37 @@ contract AbacusV0 {
     address private _abacusWallet;
 
 
-/// @notice 
-/// @param 
+/// @notice Constructor to initialize the contract on deployment.
+/// @param _wnatoAddress The wrapped native token address (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
+/// @param _uniV2Router The address of the uniV2 compatible router. Depending on the chain, this could be Uniswap on Ethereum, Uniswap on Polygon, Pancakeswap on Binance Smart Chain (BSC), ect. You can check the router address by calling the UniV2RouterAddress variable.
+/// @param _uniV3Router The address of the uniV3 router.
 constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
+   
+    /// @notice Set the owner of the contract to the msg.sender that deployed the contract.
     _owner = msg.sender;
+
+    /// @notice Set the abacus wallet to the msg.sender that deployed the contract.
     _abacusWallet=msg.sender;
     
+    /// @notice Set the initial abacus fee to 2.5%
     abacusFeeMul1000=25;
 
-    //initialize weth
-    _wnato=WETH(_wnatoAddress);
-    //initialize wrapped native token address
+    /// @notice Initialize the wrapped native token address for the chain.
     WNATO_ADDRESS=_wnatoAddress;
 
+    /// @notice Initialize the wrapped ETH contract instance with the wrapped native token address for the chain.
+    _wnato=WETH(_wnatoAddress);
+
+    /// @notice Initialize the uniV2Router address.
     UniV2RouterAddress=_uniV2Router;
 
+    /// @notice Initialize the uniV3Router address.
     UniV3RouterAddress=_uniV3Router;
 
-    //initialize univ2router
+    /// @notice Initialize the uniV2Router contract instance.
     UniV2Router = IUniV2Router(_uniV2Router);
-    //initialize univ3router
+
+    /// @notice Initialize the uniV3Router contract instance.
     UniV3Router = ISwapRouter(_uniV3Router);
 
 
