@@ -103,28 +103,28 @@ modifier onlyOwner() {
     _;
 }
 
-/// @notice swap and transfer to the chain's native token
+/// @notice 
 
 /// @dev change this natspec description but mention approve swap router, not the contract to save gas from unnecessary transfers
 function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external {
-    //unpack the call data
+
+    /// @notice unpack the call data.
     (uint _amountIn, uint _amountOutMin, address _tokenToSwap, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
-    //swap tokens for weth
+    /// @notice Swap tokens for wrapped native tokens (nato).
     uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, [_tokenToSwap, WETH_ADDRESS], address(this), _deadline)[1];
 
-    //unwrap weth
+    /// @notice Unwrap wrapped nato to nato for the amount recieved from the swap.
     _wnato.withdraw(amountRecieved);
 
-    //calculate the amount out less abacus fee
+    /// @notice Calculate the payout less abacus fee.
     (uint payout, uint abacusFee) = calculatePayoutLessAbacusFee(amountRecieved);
 
-    //send the amount out less abacus fee to the msg.sender
+    /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
 
-    //send the abacus fee to the _abacusWallet wallet
+    /// @notice Send the abacus fee to the abacus wallet.
     SafeTransferLib.safeTransferETH(_abacusWallet, abacusFee);
-
 }
 
 
