@@ -144,8 +144,16 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
     path[0]=_tokenToSwap;
     path[1]=wnatoAddress;
 
+
+    /// @dev It is necessary to get the wrapped native token balance before and after the swap because swapExactTokensForTokensSupportingFeeOnTransferTokens does not return the amountOut from the swap.
+    uint balanceBefore = _wnato.balanceOf(address(this));
+
     /// @notice Swap tokens supporting fee on transfer tokens for wrapped native tokens (nato).
-    uint amountRecieved = UniV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(_amountIn, _amountOutMin, path, address(this), _deadline)[1];
+    UniV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(_amountIn, _amountOutMin, path, address(this), _deadline);
+   
+    /// @dev Subtract the new balance of wrapped native tokens from the balance before to get the amountRecieved from the swap.
+    uint amountRecieved = _wnato.balanceOf(address(this)) - balanceBefore;
+
 
     /// @notice Unwrap wrapped nato to nato for the amount recieved from the swap.
     _wnato.withdraw(amountRecieved);

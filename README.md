@@ -15,7 +15,10 @@
 
 Description
 
+
 ## Notes
+
+Potentially batch unwraps to save gas for the end user. Do side by side gas analysis, potentially save this for v1, this can sacrifice decentralization.
 
 Uni v2 links:
 - https://github.com/Uniswap/v2-core/blob/master/contracts/interfaces/IUniswapV2Pair.sol
