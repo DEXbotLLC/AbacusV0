@@ -11,30 +11,36 @@ import "../lib/WETH.sol";
 /// @author 0xKitsune (https://github.com/0xKitsune)
 /// @notice This contract enables DEXbot and other off-chain automated transaction curators to create swaps trustlessly while extracting a fee for off-chain services.
 /// @notice In plain english, DEXbot is an automated way to sell your tokens. This contract allows DEXbot's off-chain logic to create swap transactions and return the payout to the msg.sender trustlessly.
-/// @dev the DEXbot client source code is open source and you can check out how it works or read the whitepaper here: (https://github.com/DEXbotLLC/DEXbot_Client).
+/// @dev The DEXbot client source code is open source. You can check out how it works or read the whitepaper here: (https://github.com/DEXbotLLC/DEXbot_Client).
 contract AbacusV0 {
     
-
+    /// @notice The EOA address that owns the contract. This is set to the msg.sender initially at deployment. In this contract, the _owner can update the abacus fee (which can never be > 3%), set the abacus wallet or transfer ownership. 
     address private _owner;
+    
+    /// @notice Address of a UniV2 compatible router to swap tokens. This can be set to any UniV2 compatible router (Ex. UniswapV2 or Sushiswap on Ethereum, Pancakeswap on Binance Smart Chain (BSC)).
+    address public UniV2RouterAddress; 
+    /// @notice Instance of a UniV2 compatible router to swap tokens.
+    IUniswapV2Router02 UniV2Router; 
 
-    address private _abacusWallet;
+    /// @notice Address of the UniV3 router to swap tokens.
+    address public UniV3RouterAddress; 
+    /// @notice Instance of the UniV3 router to swap tokens.
+    ISwapRouter UniV3Router;
 
-    IUniswapV2Router02 IUniV2Router; 
-
-    ISwapRouter IUniV3Router;
-
-    /// @notice Wrapped native token address for the chain (NATO). Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC.
+    /// @notice Wrapped native token (WNATO) address for the chain. This address will change depending on the chain the contract is deployed to (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
     address public constant WNATO_ADDRESS;
 
-    /// @notice WETH interface to unwrap wrapped native tokens resulting from token swaps.
+    /// @notice Wrapped ETH contract instance to unwrap WETH to ETH. While this variable is named WETH, it could be any native token depending on the chain the contract is deployed to (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
     WETH private _wnato;
-
 
     /// @notice divided by 1000 during calculations so the percent is actually a maximum of 3% during the calculation
     uint constant MAX_ABACUS_FEE_MUL_1000 = 30 ;
 
     /// @notice divided by 1000 during calculations so the percent is actually 2.5% during the calculation
     uint abacusFeeMul1000 =25;
+
+    /// @notice The EOA address that the abacus fee is sent to. This is initially set to the msg.sender.
+    address private _abacusWallet;
 
 
 /// @notice 
@@ -48,10 +54,14 @@ constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
     //initialize wrapped native token address
     WNATO_ADDRESS=_wnatoAddress;
 
+    UniV2RouterAddress=_uniV2Router;
+
+    UniV3RouterAddress=_uniV3Router;
+
     //initialize univ2router
-    IUniV2Router = IUniV2Router(_uniV2Router);
+    UniV2Router = IUniV2Router(_uniV2Router);
     //initialize univ3router
-    IUniV3Router = ISwapRouter(_uniV3Router);
+    UniV3Router = ISwapRouter(_uniV3Router);
 }
 
 
@@ -73,12 +83,14 @@ modifier onlyOwner() {
 }
 
 /// @notice swap and transfer to the chain's native token
+
+/// @dev change this natspec description but mention approve swap router, not the contract to save gas from unnecessary transfers
 function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external {
     //unpack the call data
     (uint _amountIn, uint _amountOutMin, address _tokenToSwap, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
     //swap tokens for weth
-    uint amountRecieved = IUniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, [_tokenToSwap, WETH_ADDRESS], address(this), _deadline)[1];
+    uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, [_tokenToSwap, WETH_ADDRESS], address(this), _deadline)[1];
 
     //unwrap weth
     _wnato.withdraw(amountRecieved);
@@ -102,7 +114,7 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
     (uint _amountIn, uint _amountOutMin, address _tokenToSwap, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
     //swap tokens for weth
-    uint amountRecieved = IUniV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(_amountIn, _amountOutMin, [_tokenToSwap, WETH_ADDRESS], address(this), _deadline)[1];
+    uint amountRecieved = UniV3Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(_amountIn, _amountOutMin, [_tokenToSwap, WETH_ADDRESS], address(this), _deadline)[1];
 
     //unwrap weth
     _wnato.withdraw(amountRecieved);
@@ -144,6 +156,24 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
     SafeTransferLib.safeTransferETH(_abacusWallet, abacusFee);
 }
 
+function calculatePayoutLessAbacusFee(uint amountOut) private view returns (uint, uint) {
+    uint abacusFee = (amountOut*(abacusFeeMul1000/1000));
+    return ((amountOut-abacusFee), abacusFee);
+}
+
+function approveAllSwapRouters(address _tokenAddress){
+    approveUniV2Router(_tokenAddress);
+    approveUniV3Router(_tokenAddress);
+}
+
+
+function approveUniV2Router(address _tokenAddress){
+    ERC20(_tokenAddress).approve(UniV2RouterAddress, amount);
+}
+
+function approveUniV3Router(address _tokenAddress){
+    ERC20(_tokenAddress).approve(UniV3RouterAddress, amount);
+}
 
 
 /// @notice function to update Abacus fee. Fee can never be greater than 3%
@@ -154,10 +184,6 @@ function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
 }
 
 
-function calculatePayoutLessAbacusFee(uint amountOut) private view returns (uint, uint) {
-    uint abacusFee = (amountOut*(abacusFeeMul1000/1000));
-    return ((amountOut-abacusFee), abacusFee);
-}
 
 function setAbacusWallet(address _newAbacusWallet) external onlyOwner() {
     _abacusWallet=_newAbacusWallet;

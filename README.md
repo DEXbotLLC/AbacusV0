@@ -55,51 +55,25 @@ function swapAndTransferUnwrappedNatoWithV3LP (address _lp) external {
 
 }
 ```
-### swapAndTransferUnwrappedNatoSupportingFeesOnTransferWithV3LP
-Swap tokens and send unwrapped nato to the msg.sender supporting fee on transfer with a Uni V3 LP interface.
-
-```js
-
-function swapAndTransferUnwrappedNatoSupportingFeesOnTransferWithV3LP (address _lp) external {
-
-}
-```
 
 <br />
 
 
-## AbacusV1 Plans
+## AbacusV1 Add-Ons
 
 A running list of functionality add ons for the AbacusV1. This list will be expanded upon through ideation and conversations around usecases. Gas optimizations are also going to be included in the next version and maybe even a rewrite in Yul.
-
+Off chain logic will also potentially be implemented to always look for the best price across dexes.
 
 ### swapAndTransferDAI
 
 Swaps to DAI to enable amount out in a stable coin.
 
-```js
-function swapAndTransferDAI(address _lp)
-```
-
-<br />
-
-
 ### swapAndTransferDAISupportingFeesOnTransfer
 
 Swaps to DAI to enable amount out in a stable coin supporting fees on transfer.
 
-```js
-function swapAndTransferDAISupportingFeesOnTransfer(address _lp)
-```
-
-
 ### WithdrawReferralRewards
 Enable a user to withdraw their own referral rewards. 
-
-```js
-function WithdrawReferralRewards(address referrerAddress)
-```
-
 
 ### SwapAndDistribute
 A function that a swap can happen and you can split amounts out to various wallets
