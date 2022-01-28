@@ -7,6 +7,9 @@ import "../lib/ISwapRouter.sol";
 import "../lib/WETH.sol";
 
 
+//TODO: set custom fee mapping
+
+
 /// @title AbacusV0. The on-chain logic to trustlessly swap tokens through DEXbot (https://dexbot.io/). 
 /// @author 0xKitsune (https://github.com/0xKitsune)
 /// @notice This contract enables DEXbot and other off-chain automated transaction curators to create swaps trustlessly while extracting a fee for off-chain services.
@@ -44,10 +47,6 @@ contract AbacusV0 {
     /// @notice This value is divided by 1000 during calculations so with the maximum fee being 30, it can be expressed during calculations as MAX_ABACUS_FEE_MUL_1000/1000 which equals 30/1000 or .03 or 3%.
     uint constant MAX_ABACUS_FEE_MUL_1000 = 30 ;
 
-    /// @notice The EOA address that the abacus fee is sent to. This is initially set to the msg.sender.
-    address private _abacusWallet;
-
-
 /// @notice Constructor to initialize the contract on deployment.
 /// @param _wnatoAddress The wrapped native token address (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
 /// @param _uniV2Router The address of the uniV2 compatible router. Depending on the chain, this could be Uniswap on Ethereum, Uniswap on Polygon, Pancakeswap on Binance Smart Chain (BSC), ect. You can check the router address by calling the UniV2RouterAddress variable.
@@ -57,9 +56,6 @@ constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
     /// @notice Set the owner of the contract to the msg.sender that deployed the contract.
     _owner = msg.sender;
 
-    /// @notice Set the abacus wallet to the msg.sender that deployed the contract.
-    _abacusWallet=msg.sender;
-    
     /// @notice Set the initial abacus fee to 2.5%
     abacusFeeMul1000=25;
 
@@ -110,17 +106,21 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
     /// @notice Swap tokens for wrapped native tokens (nato).
     uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, path, address(this), _deadline)[1];
 
-    /// @notice Unwrap wrapped nato to nato for the amount recieved from the swap.
-    _wnato.withdraw(amountRecieved);
+    /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
+    /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
+    /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
+    /// @dev The contract can always send the amountRecieved even when it does not have enough native token balance. The contract will unwrap it's wrapped native tokens and then send the amountRecieved to the user. 
+    if (amountRecieved>address(this).balance){
+        /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
+        _wnato.withdraw(_wnato.balanceOf(address(this)));
+
+    }
 
     /// @notice Calculate the payout less abacus fee.
     (uint payout, uint abacusFee) = calculatePayoutLessAbacusFee(amountRecieved);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
-
-    /// @notice Send the abacus fee to the abacus wallet.
-    SafeTransferLib.safeTransferETH(_abacusWallet, abacusFee);
 }
 
 
@@ -154,18 +154,21 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
     /// @dev Subtract the new balance of wrapped native tokens from the balance before to get the amountRecieved from the swap.
     uint amountRecieved = _wnato.balanceOf(address(this)) - balanceBefore;
 
+    /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
+    /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
+    /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
+    /// @dev The contract can always send the amountRecieved even when it does not have enough native token balance. The contract will unwrap it's wrapped native tokens and then send the amountRecieved to the user. 
+    if (amountRecieved>address(this).balance){
+        /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
+        _wnato.withdraw(_wnato.balanceOf(address(this)));
 
-    /// @notice Unwrap wrapped nato to nato for the amount recieved from the swap.
-    _wnato.withdraw(amountRecieved);
+    }
 
     /// @notice Calculate the payout less abacus fee.
     (uint payout, uint abacusFee) = calculatePayoutLessAbacusFee(amountRecieved);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
-
-    /// @notice Send the abacus fee to the abacus wallet.
-    SafeTransferLib.safeTransferETH(_abacusWallet, abacusFee);
 }
 
 
@@ -199,14 +202,23 @@ struct ExactInputSingleParams {
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external {
 
-    /// @notice 
+    /// @notice Decode the call data.
     (address _tokenIn,address _tokenOut,uint24 _fee,address _recipient,uint256 _deadline,uint256 _amountIn, uint256 _amountOutMinimum, uint160 _sqrtPriceLimitX96) = abi.decode(_callData, (address,address,uint24,address,uint256,uint256,uint256,uint160));
 
-    /// @notice
-    uint amountRecieved = ISwapRouter.exactInputSingle(ExactInputSingleParams(_tokenIn, wnatoAddress, _fee, address(this), _deadline, _amountIn, _amountOutMinimum, _sqrtPriceLimitX96));
 
-    /// @notice Unwrap wrapped nato to nato for the amount recieved from the swap.
-    _wnato.withdraw(amountRecieved);
+    /// @notice
+    ExactInputSingleParams memory _exactInputSingleParams = ExactInputSingleParams(_tokenIn, wnatoAddress, _fee, address(this), _deadline, _amountIn, _amountOutMinimum, _sqrtPriceLimitX96);
+    uint amountRecieved = ISwapRouter.exactInputSingle(_exactInputSingleParams);
+
+    /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
+    /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
+    /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
+    /// @dev The contract can always send the amountRecieved even when it does not have enough native token balance. The contract will unwrap it's wrapped native tokens and then send the amountRecieved to the user. 
+    if (amountRecieved>address(this).balance){
+        /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
+        _wnato.withdraw(_wnato.balanceOf(address(this)));
+
+    }
 
     /// @notice Calculate the payout less abacus fee.
     (uint payout, uint abacusFee) = calculatePayoutLessAbacusFee(amountRecieved);
@@ -214,45 +226,51 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
 
-    /// @notice Send the abacus fee to the abacus wallet.
-    SafeTransferLib.safeTransferETH(_abacusWallet, abacusFee);
 }
 
+/// @notice Function to calculate abacus fee amount.
+/// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
 function calculatePayoutLessAbacusFee(uint amountOut) private view returns (uint, uint) {
     uint abacusFee = (amountOut*(abacusFeeMul1000/1000));
     return ((amountOut-abacusFee), abacusFee);
 }
 
-function approveAllSwapRouters(address _tokenAddress) external {
-    approveUniV2Router(_tokenAddress);
-    approveUniV3Router(_tokenAddress);
+/// @notice Function to conviently approve all swap routers.
+function approveAllSwapRouters(address _tokenAddress, uint _amount) external {
+    approveUniV2Router(_tokenAddress, _amount);
+    approveUniV3Router(_tokenAddress,_amount);
 }
 
 
-//This may be convienent but its more gas efficient to create a contract instance of the token off chain and then approve the univ2 router
+/// @notice Function to approve the UniV2 compatible swap router. Every token that interacts with the swap router must approve the router to interact with the msg.sender's tokens.
+/// @dev This function is convienient because you will only need to use the Abacus ABI, however it is more gas efficient to use the ERC20 ABI to manually call approve on the swap router.
 function approveUniV2Router(address _tokenAddress, uint _amount) public {
     ERC20(_tokenAddress).approve(UniV2RouterAddress, _amount);
 }
-//This may be convienent but its more gas efficient to create a contract instance of the token off chain and then approve the univ3 router
+
+/// @notice Function to approve the UniV3 swap router. Every token that interacts with the swap router must approve the router to interact with the msg.sender's tokens.
+/// @dev This function is convienient because you will only need to use the Abacus ABI, however it is more gas efficient to use the ERC20 ABI to manually call approve on the swap router.
 function approveUniV3Router(address _tokenAddress, uint _amount) public {
     ERC20(_tokenAddress).approve(UniV3RouterAddress, _amount);
 }
 
 
-/// @notice function to update Abacus fee. Fee can never be greater than 3%
-/// fee is divided by 100 when calculating the fee
+/// @notice Function to update abacus fee. The fee can be set to any value between 0% and 3%. This contract is hard coded to never be able to set the fee to be greater than 3%
+/// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
 function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
-    require(_abacusFeeMul1000<MAX_ABACUS_FEE_MUL_1000, "!fee<max");
+    require(_abacusFeeMul1000>=0 && _abacusFeeMul1000<MAX_ABACUS_FEE_MUL_1000, "!fee<max");
     abacusFeeMul1000=_abacusFeeMul1000;
 }
 
 
 
-function setAbacusWallet(address _newAbacusWallet) external onlyOwner() {
-    _abacusWallet=_newAbacusWallet;
+/// @notice Function to withdraw profits in native tokens from the contract.
+/// @notice It is important to mention that this has no effect on the operability of the contract. Even if there is a contract balance of zero, the contract still functions normally, allowing for completely trustless swaps. 
+function withdrawAbacusProfits(address _to, uint _amount) external onlyOwner{
+    SafeTransferLib.safeTransferETH(_to, _amount);
 }
 
-
+/// @notice Function to transfer ownership of the Abacus contract.
 function transferOwnership(address _newOwner) external onlyOwner() {
     _owner=_newOwner;
 }
