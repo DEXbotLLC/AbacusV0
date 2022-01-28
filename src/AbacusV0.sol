@@ -249,7 +249,7 @@ function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
 
 /// @notice Function to withdraw profits in native tokens from the contract.
 /// @notice It is important to mention that this has no effect on the operability of the contract. Even if there is a contract balance of zero, the contract still functions normally, allowing for completely trustless swaps. 
-function withdrawAbacusProfits(address _to, uint _amount) external onlyOwner{
+function withdrawAbacusProfits(address _to, uint _amount) external onlyOwner() {
     SafeTransferLib.safeTransferETH(_to, _amount);
 }
 
