@@ -172,43 +172,26 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
 }
 
 
-/// @notice Struct to send data to the Uniswap V3 Router exactInputSingle method.
-/// @dev _tokenIn is the contract address of the inbound token.
-/// @dev _tokenOut is the contract address of the outbound token.
-/// @dev _fee is the fee tier of the pool, used to determine the correct pool contract in which to execute the swap.
-/// @dev _recipient is the destination address of the outbound token.
-/// @dev _deadline is the unix time after which a swap will fail, to protect against long-pending transactions and wild swings in prices.
-/// @dev _amountIn is the exact amount of tokens you want to swap.
-/// @dev _amountOutMinimum is the minimum amount of tokens you want resulting from the swap.
-/// @dev _sqrtPriceLimitX96 can be used to set the limit for the price the swap will push the pool to, which can help protect against price impact or for setting up logic in a variety of price-relevant mechanisms
-struct ExactInputSingleParams {
-    address tokenIn;
-    address tokenOut;
-    uint24 fee;
-    address recipient;
-    uint256 deadline;
-    uint256 amountIn;
-    uint256 amountOutMinimum;
-    uint160 sqrtPriceLimitX96;
-    }
-
 
 /// @notice This function uses the UniV3 router to swap a token for the wrapped native token, unwraps the native token and sends the amountOut minus the abacus fee back to the msg.sender.
 /// @notice This function utilizes the ISwapRouter.exactInputSingle function which swaps an exact amount of token A for the maximum amount of token B.
 /// @param _callData This param is abi encoded bytes containing the ExactInputSingleParams struct required to interact with the ISwapRouter exactInputSingle method.  
 /// @dev To create the abi encoded calldata, simply use abi.encode(_tokenIn,_tokenOut,_fee,_recipient,_deadline,_amountIn,_amountOutMinimum,_sqrtPriceLimitX96).
-/// @dev See ExactInputSingleParams struct for a definition of each argument that is encoded in the _callData.
-/// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
+/// @notice Struct to send data to the Uniswap V3 Router exactInputSingle method.
+/// @dev _tokenIn is the contract address of the inbound token.
+/// @dev _fee is the fee tier of the pool, used to determine the correct pool contract in which to execute the swap.
+/// @dev _deadline is the unix time after which a swap will fail, to protect against long-pending transactions and wild swings in prices.
+/// @dev _amountIn is the exact amount of tokens you want to swap.
+/// @dev _amountOutMinimum is the minimum amount of tokens you want resulting from the swap.
+/// @dev _sqrtPriceLimitX96 can be used to set the limit for the price the swap will push the pool to, which can help protect against price impact or for setting up logic in a variety of price-relevant mechanisms/// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external {
 
     /// @notice Decode the call data.
-    (address _tokenIn,address _tokenOut,uint24 _fee,address _recipient,uint256 _deadline,uint256 _amountIn, uint256 _amountOutMinimum, uint160 _sqrtPriceLimitX96) = abi.decode(_callData, (address,address,uint24,address,uint256,uint256,uint256,uint160));
+    (address _tokenIn, uint24 _fee ,uint256 _deadline,uint256 _amountIn, uint256 _amountOutMinimum, uint160 _sqrtPriceLimitX96) = abi.decode(_callData, (address,uint24,uint256,uint256,uint256,uint160));
 
-
-    /// @notice
-    ExactInputSingleParams memory _exactInputSingleParams = ExactInputSingleParams(_tokenIn, wnatoAddress, _fee, address(this), _deadline, _amountIn, _amountOutMinimum, _sqrtPriceLimitX96);
-    uint amountRecieved = ISwapRouter.exactInputSingle(_exactInputSingleParams);
+    ///@notice Swap exact input tokens for maximum amount of wrapped native tokens.
+    uint amountRecieved = UniV3Router.exactInputSingle(ISwapRouter.ExactInputSingleParams(_tokenIn, wnatoAddress, _fee, address(this), _deadline, _amountIn, _amountOutMinimum, _sqrtPriceLimitX96));
 
     /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
     /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
