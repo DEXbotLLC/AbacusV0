@@ -7,7 +7,7 @@ import "../lib/ISwapRouter.sol";
 import "../lib/WETH.sol";
 
 
-//TODO: set custom fee mapping
+//TODO: set custom fee mapping and a function that is onlyOwner to set the custom fees
 
 
 /// @title AbacusV0. The on-chain logic to trustlessly swap tokens through DEXbot (https://dexbot.io/). 
