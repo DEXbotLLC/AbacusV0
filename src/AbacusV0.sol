@@ -46,6 +46,12 @@ contract AbacusV0 {
     /// @notice The max fee is 3% and the abacus fee can never be set above this value.
     /// @notice This value is divided by 1000 during calculations so with the maximum fee being 30, it can be expressed during calculations as MAX_ABACUS_FEE_MUL_1000/1000 which equals 30/1000 or .03 or 3%.
     uint constant MAX_ABACUS_FEE_MUL_1000 = 30 ;
+ 
+    /// @notice Mapping to hold custom abacus fees for specific externally owned wallets to reduce fees for that wallet.
+    mapping (address=>uint) addressToCustomFee;
+
+    /// @notice list of addresses that have custom fees
+    address[] customFeeAddresses;
 
 /// @notice Constructor to initialize the contract on deployment.
 /// @param _wnatoAddress The wrapped native token address (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
@@ -185,6 +191,8 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
 /// @dev _amountOutMinimum is the minimum amount of tokens you want resulting from the swap.
 /// @dev _sqrtPriceLimitX96 can be used to set the limit for the price the swap will push the pool to, which can help protect against price impact or for setting up logic in a variety of price-relevant mechanisms/// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
+/// @dev IMPORTANT! Always check that the uniV3Address before using this function. Some networks do not have a univ3 interface and the constructor will set this address to 0. 
+/// @dev The DEXbot client accounts for this but if you are calling this function directly, make sure to check the address first.
 function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external {
 
     /// @notice Decode the call data.
@@ -243,6 +251,27 @@ function approveUniV3Router(address _tokenAddress, uint _amount) public {
 function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
     require(_abacusFeeMul1000>=0 && _abacusFeeMul1000<MAX_ABACUS_FEE_MUL_1000, "!fee<max");
     abacusFeeMul1000=_abacusFeeMul1000;
+
+
+    /// @notice For each address that has a custom fee, if the custom fee is greater than the new abacus fee, reduce their custom fee to the new abacus fee
+    for (uint i=0; i<customFeeAddresses.length-1; i++) {
+        address _customFeeAddress=customFeeAddresses[i]; 
+        if (addressToCustomFee[_customFeeAddress] >_abacusFeeMul1000){
+            addressToCustomFee[_customFeeAddress]=_abacusFeeMul1000;
+        }
+    }
+}
+
+/// @notice Function to set a custom abacus fee for specific wallet
+function setCustomAbacusFeeForEOA(address _address, uint _customFeeMul1000) external onlyOwner() {
+    require(_customFeeMul1000<=MAX_ABACUS_FEE_MUL_1000);
+    addressToCustomFee[_address]=_customFeeMul1000;
+    customFeeAddresses.push(_address);
+}
+
+/// @notice Function to set a custom abacus fee for specific wallet
+function removeCustomAbacusFeeFromEOA(address _address) external onlyOwner() {
+    delete addressToCustomFee[_address];
 }
 
 /// @notice Function to withdraw profits in native tokens from the contract.

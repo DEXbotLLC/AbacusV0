@@ -102,6 +102,395 @@
       "artifacts": [
         "AbacusV0Test"
       ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/ERC20.sol": {
+      "lastModificationDate": 1643345713677,
+      "contentHash": "e2c22aed19719e4909dbd84d07295e2b",
+      "sourceName": "lib/ERC20.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.0"
+      ],
+      "artifacts": [
+        "ERC20"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/ISwapRouter.sol": {
+      "lastModificationDate": 1643345713677,
+      "contentHash": "17df530966fa7147dfa236e67afaa888",
+      "sourceName": "lib/ISwapRouter.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [
+        "./IUniswapV3SwapCallback.sol"
+      ],
+      "versionPragmas": [
+        ">=0.7.5"
+      ],
+      "artifacts": [
+        "ISwapRouter"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/IUniswapV2Pair.sol": {
+      "lastModificationDate": 1643345713677,
+      "contentHash": "8502aa3fe044adc01d0ec6c09e1b196a",
+      "sourceName": "lib/IUniswapV2Pair.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.5.0"
+      ],
+      "artifacts": [
+        "IUniswapV2Pair"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/IUniswapV2Router01.sol": {
+      "lastModificationDate": 1643345713677,
+      "contentHash": "2b28949ce8397c009eaebbf62cbc93d9",
+      "sourceName": "lib/IUniswapV2Router01.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.2"
+      ],
+      "artifacts": [
+        "IUniswapV2Router01"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/IUniswapV2Router02.sol": {
+      "lastModificationDate": 1643345713677,
+      "contentHash": "4f852a8ed23e77062c2e79785512bdf1",
+      "sourceName": "lib/IUniswapV2Router02.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [
+        "./IUniswapV2Router01.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.2"
+      ],
+      "artifacts": [
+        "IUniswapV2Router02"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/IUniswapV3SwapCallback.sol": {
+      "lastModificationDate": 1643345713677,
+      "contentHash": "a8ba2d37b0107911ae0e3b0e123cbd83",
+      "sourceName": "lib/IUniswapV3SwapCallback.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.5.0"
+      ],
+      "artifacts": [
+        "IUniswapV3SwapCallback"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/SafeTransferLib.sol": {
+      "lastModificationDate": 1643383236720,
+      "contentHash": "ddfdbed53bbaf8deb3b1d8effc254310",
+      "sourceName": "lib/SafeTransferLib.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [
+        "./ERC20.sol"
+      ],
+      "versionPragmas": [
+        ">=0.8.0"
+      ],
+      "artifacts": [
+        "SafeTransferLib"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/WETH.sol": {
+      "lastModificationDate": 1643345713677,
+      "contentHash": "0e8ac4e9bf4cda8a80a58b2f3b853055",
+      "sourceName": "lib/WETH.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [
+        "./ERC20.sol",
+        "./SafeTransferLib.sol"
+      ],
+      "versionPragmas": [
+        ">=0.8.0"
+      ],
+      "artifacts": [
+        "WETH"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/ds-test/src/test.sol": {
+      "lastModificationDate": 1643345713677,
+      "contentHash": "5d45a46528eaf8a26f0a8d93669f3148",
+      "sourceName": "lib/ds-test/src/test.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.23"
+      ],
+      "artifacts": [
+        "DSTest"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/src/AbacusV0.sol": {
+      "lastModificationDate": 1643652495243,
+      "contentHash": "0a0fc38c5a82899181e76e47baf38434",
+      "sourceName": "src/AbacusV0.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [
+        "../lib/IUniswapV2Pair.sol",
+        "../lib/IUniswapV2Router02.sol",
+        "../lib/ISwapRouter.sol",
+        "../lib/WETH.sol"
+      ],
+      "versionPragmas": [
+        ">=0.8.10"
+      ],
+      "artifacts": [
+        "AbacusV0"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/src/test/AbacusV0.t.sol": {
+      "lastModificationDate": 1643652490991,
+      "contentHash": "ffdc09ce5f99124272e9bf8bf6fade84",
+      "sourceName": "src/test/AbacusV0.t.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [
+        "../../lib/ds-test/src/test.sol",
+        "../AbacusV0.sol"
+      ],
+      "versionPragmas": [],
+      "artifacts": [
+        "AbacusV0Test"
+      ]
     }
   }
 }
