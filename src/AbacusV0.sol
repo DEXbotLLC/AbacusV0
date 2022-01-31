@@ -123,7 +123,7 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -171,7 +171,7 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -212,7 +212,7 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -221,9 +221,18 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
 
 /// @notice Function to calculate abacus fee amount.
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
-function calculatePayoutLessAbacusFee(uint amountOut) private view returns (uint) {
-    uint abacusFee = (amountOut*(abacusFeeMul1000/1000));
-    return ((amountOut-abacusFee));
+function calculatePayoutLessAbacusFee(uint amountOut, address _address) private view returns (uint) {
+   
+    /// @notice If the address has a custom fee, use the custom fee in the payout calculation, otherwise, use the default abacusFee
+    uint customFeeMul1000 = addressToCustomFee[_address];
+    if (customFeeMul1000 == 0){
+        uint abacusFee = (amountOut * (abacusFeeMul1000/1000));
+        return ((amountOut - abacusFee));
+    }else{
+        uint abacusFee = (amountOut * (customFeeMul1000/1000));
+        return ((amountOut - abacusFee));
+    }
+ 
 }
 
 /// @notice Function to conviently approve all swap routers.
