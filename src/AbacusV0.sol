@@ -21,13 +21,13 @@ contract AbacusV0 {
     address private _owner;
     
     /// @notice Address of a UniV2 compatible router to swap tokens. This can be set to any UniV2 compatible router (Depending on the chain, this could be Uniswap on Ethereum, Uniswap on Polygon, Pancakeswap on Binance Smart Chain (BSC), ect.).
-    address public UniV2RouterAddress; 
+    address public uniV2RouterAddress; 
 
     /// @notice Instance of a UniV2 compatible router to swap tokens.
     IUniswapV2Router02 UniV2Router; 
 
     /// @notice Address of the UniV3 router to swap tokens.
-    address public UniV3RouterAddress; 
+    address public uniV3RouterAddress; 
 
     /// @notice Instance of the UniV3 router to swap tokens.
     ISwapRouter UniV3Router;
@@ -48,10 +48,10 @@ contract AbacusV0 {
     uint constant MAX_ABACUS_FEE_MUL_1000 = 30 ;
  
     /// @notice Mapping to hold custom abacus fees for specific externally owned wallets to reduce fees for that wallet.
-    mapping (address=>uint) addressToCustomFee;
+    mapping (address=>uint) public addressToCustomFee;
 
     /// @notice list of addresses that have custom fees
-    address[] customFeeAddresses;
+    address[] public customFeeAddresses;
 
 /// @notice Constructor to initialize the contract on deployment.
 /// @param _wnatoAddress The wrapped native token address (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
@@ -72,10 +72,10 @@ constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
     _wnato=WETH(payable(_wnatoAddress));
 
     /// @notice Initialize the UniV2Router address.
-    UniV2RouterAddress=_uniV2Router;
+    uniV2RouterAddress=_uniV2Router;
 
     /// @notice Initialize the UniV3Router address.
-    UniV3RouterAddress=_uniV3Router;
+    uniV3RouterAddress=_uniV3Router;
 
     /// @notice Initialize the UniV2Router contract instance.
     UniV2Router = IUniswapV2Router02(_uniV2Router);
@@ -123,7 +123,7 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout, uint abacusFee) = calculatePayoutLessAbacusFee(amountRecieved);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -171,7 +171,7 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout, uint abacusFee) = calculatePayoutLessAbacusFee(amountRecieved);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -212,7 +212,7 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout, uint abacusFee) = calculatePayoutLessAbacusFee(amountRecieved);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -221,9 +221,9 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
 
 /// @notice Function to calculate abacus fee amount.
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
-function calculatePayoutLessAbacusFee(uint amountOut) private view returns (uint, uint) {
+function calculatePayoutLessAbacusFee(uint amountOut) private view returns (uint) {
     uint abacusFee = (amountOut*(abacusFeeMul1000/1000));
-    return ((amountOut-abacusFee), abacusFee);
+    return ((amountOut-abacusFee));
 }
 
 /// @notice Function to conviently approve all swap routers.
@@ -236,13 +236,13 @@ function approveAllSwapRouters(address _tokenAddress, uint _amount) external {
 /// @notice Function to approve the UniV2 compatible swap router. Every token that interacts with the swap router must approve the router to interact with the msg.sender's tokens.
 /// @dev This function is convienient because you will only need to use the Abacus ABI, however it is more gas efficient to use the ERC20 ABI to manually call approve on the swap router.
 function approveUniV2Router(address _tokenAddress, uint _amount) public {
-    ERC20(_tokenAddress).approve(UniV2RouterAddress, _amount);
+    ERC20(_tokenAddress).approve(uniV2RouterAddress, _amount);
 }
 
 /// @notice Function to approve the UniV3 swap router. Every token that interacts with the swap router must approve the router to interact with the msg.sender's tokens.
 /// @dev This function is convienient because you will only need to use the Abacus ABI, however it is more gas efficient to use the ERC20 ABI to manually call approve on the swap router.
 function approveUniV3Router(address _tokenAddress, uint _amount) public {
-    ERC20(_tokenAddress).approve(UniV3RouterAddress, _amount);
+    ERC20(_tokenAddress).approve(uniV3RouterAddress, _amount);
 }
 
 
@@ -254,10 +254,12 @@ function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
 
 
     /// @notice For each address that has a custom fee, if the custom fee is greater than the new abacus fee, reduce their custom fee to the new abacus fee
-    for (uint i=0; i<customFeeAddresses.length-1; i++) {
-        address _customFeeAddress=customFeeAddresses[i]; 
-        if (addressToCustomFee[_customFeeAddress] >_abacusFeeMul1000){
-            addressToCustomFee[_customFeeAddress]=_abacusFeeMul1000;
+    if (customFeeAddresses.length>0){
+        for (uint i=0; i<customFeeAddresses.length-1; i++) {
+            address _customFeeAddress=customFeeAddresses[i]; 
+            if (addressToCustomFee[_customFeeAddress] >_abacusFeeMul1000){
+                addressToCustomFee[_customFeeAddress]=_abacusFeeMul1000;
+            }
         }
     }
 }
@@ -286,6 +288,35 @@ function transferOwnership(address _newOwner) external onlyOwner() {
 }
 
 
+
+
+
+/// @dev FIXME: delete later, just for debugging
+
+function toString(address account) public pure returns(string memory) {
+    return toString(abi.encodePacked(account));
+}
+
+function toString(uint256 value) public pure returns(string memory) {
+    return toString(abi.encodePacked(value));
+}
+
+function toString(bytes32 value) public pure returns(string memory) {
+    return toString(abi.encodePacked(value));
+}
+
+function toString(bytes memory data) public pure returns(string memory) {
+    bytes memory alphabet = "0123456789abcdef";
+
+    bytes memory str = new bytes(2 + data.length * 2);
+    str[0] = "0";
+    str[1] = "x";
+    for (uint i = 0; i < data.length; i++) {
+        str[2+i*2] = alphabet[uint(uint8(data[i] >> 4))];
+        str[3+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
+    }
+    return string(str);
+}
 
    
 }

@@ -1,108 +1,6 @@
 {
   "_format": "ethers-rs-sol-cache-1",
   "files": {
-    "/home/sekiro/dexbot/AbacusV0/lib/ds-test/src/test.sol": {
-      "lastModificationDate": 1642801896991,
-      "contentHash": "5d45a46528eaf8a26f0a8d93669f3148",
-      "sourceName": "lib/ds-test/src/test.sol",
-      "solcConfig": {
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "": [
-                "ast"
-              ],
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ]
-            }
-          },
-          "evmVersion": "london"
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.4.23"
-      ],
-      "artifacts": [
-        "DSTest"
-      ]
-    },
-    "/home/sekiro/dexbot/AbacusV0/src/AbacusV0.sol": {
-      "lastModificationDate": 1642816532384,
-      "contentHash": "0eff7be51a3b3651c0bac66b11517e95",
-      "sourceName": "src/AbacusV0.sol",
-      "solcConfig": {
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "": [
-                "ast"
-              ],
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ]
-            }
-          },
-          "evmVersion": "london"
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.8.0"
-      ],
-      "artifacts": [
-        "AbacusV0"
-      ]
-    },
-    "/home/sekiro/dexbot/AbacusV0/src/test/Contract.t.sol": {
-      "lastModificationDate": 1642816551811,
-      "contentHash": "ea51de01b3b38416bf43d35d40e60919",
-      "sourceName": "src/test/Contract.t.sol",
-      "solcConfig": {
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "": [
-                "ast"
-              ],
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ]
-            }
-          },
-          "evmVersion": "london"
-        }
-      },
-      "imports": [
-        "ds-test/test.sol"
-      ],
-      "versionPragmas": [],
-      "artifacts": [
-        "AbacusV0Test"
-      ]
-    },
     "/home/sekiro/dexbot/AbacusV0_Private/lib/ERC20.sol": {
       "lastModificationDate": 1643345713677,
       "contentHash": "e2c22aed19719e4909dbd84d07295e2b",
@@ -419,8 +317,8 @@
       ]
     },
     "/home/sekiro/dexbot/AbacusV0_Private/src/AbacusV0.sol": {
-      "lastModificationDate": 1643652495243,
-      "contentHash": "0a0fc38c5a82899181e76e47baf38434",
+      "lastModificationDate": 1643659236844,
+      "contentHash": "fcf1023c3b5b2429edc063067228b214",
       "sourceName": "src/AbacusV0.sol",
       "solcConfig": {
         "settings": {
@@ -458,8 +356,8 @@
       ]
     },
     "/home/sekiro/dexbot/AbacusV0_Private/src/test/AbacusV0.t.sol": {
-      "lastModificationDate": 1643652490991,
-      "contentHash": "ffdc09ce5f99124272e9bf8bf6fade84",
+      "lastModificationDate": 1643659320366,
+      "contentHash": "b052a68a4c9b2eff303f844bdb7419e8",
       "sourceName": "src/test/AbacusV0.t.sol",
       "solcConfig": {
         "settings": {
@@ -485,11 +383,47 @@
       },
       "imports": [
         "../../lib/ds-test/src/test.sol",
-        "../AbacusV0.sol"
+        "../AbacusV0.sol",
+        "./Console.sol"
       ],
       "versionPragmas": [],
       "artifacts": [
-        "AbacusV0Test"
+        "AbacusV0Test",
+        "User"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/src/test/Console.sol": {
+      "lastModificationDate": 1643658732242,
+      "contentHash": "f756579730c37ec6bd53643d93d88313",
+      "sourceName": "src/test/Console.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
       ]
     }
   }
