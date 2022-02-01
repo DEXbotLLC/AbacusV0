@@ -235,25 +235,6 @@ function calculatePayoutLessAbacusFee(uint _amountOut, address _address) public 
  
 }
 
-/// @notice Function to conviently approve all swap routers.
-function approveAllSwapRouters(address _tokenAddress, uint _amount) external {
-    approveUniV2Router(_tokenAddress, _amount);
-    approveUniV3Router(_tokenAddress,_amount);
-}
-
-
-/// @notice Function to approve the UniV2 compatible swap router. Every token that interacts with the swap router must approve the router to interact with the msg.sender's tokens.
-/// @dev This function is convienient because you will only need to use the Abacus ABI, however it is more gas efficient to use the ERC20 ABI to manually call approve on the swap router.
-function approveUniV2Router(address _tokenAddress, uint _amount) public {
-    ERC20(_tokenAddress).approve(uniV2RouterAddress, _amount);
-}
-
-/// @notice Function to approve the UniV3 swap router. Every token that interacts with the swap router must approve the router to interact with the msg.sender's tokens.
-/// @dev This function is convienient because you will only need to use the Abacus ABI, however it is more gas efficient to use the ERC20 ABI to manually call approve on the swap router.
-function approveUniV3Router(address _tokenAddress, uint _amount) public {
-    ERC20(_tokenAddress).approve(uniV3RouterAddress, _amount);
-}
-
 
 /// @notice Function to update abacus fee. The fee can be set to any value between 0% and 3%. This contract is hard coded to never be able to set the fee to be greater than 3%
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
@@ -286,7 +267,7 @@ function removeCustomAbacusFeeFromEOA(address _address) external onlyOwner() {
 /// @notice Function to withdraw profits in native tokens from the contract.
 /// @notice It is important to mention that this has no effect on the operability of the contract. Even if there is a contract balance of zero, the contract still functions normally, allowing for completely trustless swaps. 
 function withdrawAbacusProfits(address _to, uint _amount) external onlyOwner() {
-    require(_amount>address(this).balance, "amt>bal");
+    require(_amount<=address(this).balance, "amt>bal");
     SafeTransferLib.safeTransferETH(_to, _amount);
 }
 

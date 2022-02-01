@@ -28,8 +28,6 @@ interface CheatCodes {
 
     function setUp() public {
          abacusV0 = new AbacusV0(_wnatoAddress, _uniV2Address, _uniV3Address);
-        // give the test contract eth
-        cheatCodes.deal(address(this), 9999999999999999999999999);
     }
 
     /// @notice test public variables
@@ -57,22 +55,6 @@ interface CheatCodes {
     function testCalculatePayoutLessAbacusFee() public {
         uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, address(0));
         assertEq(payout,44209946);
-    }
-
-
-    /// @notice test approveUniV2Router
-    function testApproveUniV2Router() public {
-        abacusV0.approveUniV2Router(_wnatoAddress, (2**256 - 1));
-    }
-    /// @notice test approveUniV3Router
-    function testApproveUniV3Router() public {
-        abacusV0.approveUniV3Router(_wnatoAddress, (2**256 - 1));
-
-    }
-
-    /// @notice test approveAllSwapRouters
-    function testApproveAllSwapRouters() public {
-        abacusV0.approveAllSwapRouters(_wnatoAddress, (2**256 - 1));
     }
 
     /// @notice test setAbacusFee
@@ -106,20 +88,18 @@ interface CheatCodes {
 
     /// @notice test withdrawAbacusProfits
     function testWithdrawAbacusProfits() public {
- 
-        // print the balance
-        console.log(address(this).balance);
-        //transfer eth 
-        SafeTransferLib.safeTransferETH(0x53A2C854F3cEA50bD54913649dBB2980D05980ad, 345342334534);
-        //print the balance
-        console.log(address(this).balance);
+         // give the abacusV0 contract eth
+        cheatCodes.deal(address(abacusV0), 9999999999999999999999999);
         
-        // ^^^^ this works
+        // print the balance
+        console.log(address(abacusV0).balance);
 
         //transfer eth, abstracted
         abacusV0.withdrawAbacusProfits(0x53A2C854F3cEA50bD54913649dBB2980D05980ad, 345342334534);
 
-        // ^^^^ this fails, error is ETH_TRANSFER_FAILED
+        //print the balance after withdraw
+        console.log(address(abacusV0).balance);
+        
 
     }
 
