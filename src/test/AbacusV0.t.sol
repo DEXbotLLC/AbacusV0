@@ -70,6 +70,11 @@ contract AbacusV0Test is DSTest {
     //     assertEq(abacusV0.addressToCustomFee(0xea5C8c5a920a347B3C7D3C0CE297018D4aE5B2f1), 20);
     // }
 
+    function testCalculatePayoutLessAbacusFee() public {
+        abacusV0.calculatePayoutLessAbacusFee(100000, address(0));
+
+    }
+
 
 
 }
