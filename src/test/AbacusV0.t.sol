@@ -27,7 +27,7 @@ interface CheatCodes {
 
 
     function setUp() public {
-         abacusV0= new AbacusV0(_wnatoAddress, _uniV2Address, _uniV3Address);
+         abacusV0 = new AbacusV0(_wnatoAddress, _uniV2Address, _uniV3Address);
         // give the test contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
     }
@@ -67,6 +67,7 @@ interface CheatCodes {
     /// @notice test approveUniV3Router
     function testApproveUniV3Router() public {
         abacusV0.approveUniV3Router(_wnatoAddress, (2**256 - 1));
+
     }
 
     /// @notice test approveAllSwapRouters
