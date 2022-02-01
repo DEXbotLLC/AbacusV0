@@ -3,19 +3,19 @@ pragma solidity>= 0.8.10;
 
 import "../../lib/ds-test/src/test.sol";
 import "../AbacusV0.sol";
-import "./Console.sol";
-
+import "../../lib/utils/Console.sol";
+import "../../lib/utils/FixedPointMathLib.sol";
 
 /// @dev to test, run `forge test --force -vvv`
 
 contract User {
 
 }
-
-contract AbacusV0Test is DSTest {
+ contract AbacusV0Test is DSTest {
     AbacusV0 abacusV0;
     User user;
 
+    using FixedPointMathLib for uint;
 
     /// @notice set constructor variables depending on the network
 
@@ -71,8 +71,8 @@ contract AbacusV0Test is DSTest {
     // }
 
     function testCalculatePayoutLessAbacusFee() public {
-        abacusV0.calculatePayoutLessAbacusFee(100000, address(0));
-
+        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, address(0));
+        assertEq(payout,44209946);
     }
 
 

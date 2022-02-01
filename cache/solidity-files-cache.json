@@ -316,9 +316,77 @@
         "DSTest"
       ]
     },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/utils/Console.sol": {
+      "lastModificationDate": 1643677775550,
+      "contentHash": "f756579730c37ec6bd53643d93d88313",
+      "sourceName": "lib/utils/Console.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
+      ]
+    },
+    "/home/sekiro/dexbot/AbacusV0_Private/lib/utils/FixedPointMathLib.sol": {
+      "lastModificationDate": 1643677791765,
+      "contentHash": "7c29495473ccb42145c06841a7dcca1a",
+      "sourceName": "lib/utils/FixedPointMathLib.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.0"
+      ],
+      "artifacts": [
+        "FixedPointMathLib"
+      ]
+    },
     "/home/sekiro/dexbot/AbacusV0_Private/src/AbacusV0.sol": {
-      "lastModificationDate": 1643659236844,
-      "contentHash": "fcf1023c3b5b2429edc063067228b214",
+      "lastModificationDate": 1643681262268,
+      "contentHash": "9d4550d352a0ba456a566cb96daacd9b",
       "sourceName": "src/AbacusV0.sol",
       "solcConfig": {
         "settings": {
@@ -356,8 +424,8 @@
       ]
     },
     "/home/sekiro/dexbot/AbacusV0_Private/src/test/AbacusV0.t.sol": {
-      "lastModificationDate": 1643659320366,
-      "contentHash": "b052a68a4c9b2eff303f844bdb7419e8",
+      "lastModificationDate": 1643681430836,
+      "contentHash": "275959bb6bc77a03832da87133517480",
       "sourceName": "src/test/AbacusV0.t.sol",
       "solcConfig": {
         "settings": {
@@ -384,46 +452,13 @@
       "imports": [
         "../../lib/ds-test/src/test.sol",
         "../AbacusV0.sol",
-        "./Console.sol"
+        "../../lib/utils/Console.sol",
+        "../../lib/utils/FixedPointMathLib.sol"
       ],
       "versionPragmas": [],
       "artifacts": [
         "AbacusV0Test",
         "User"
-      ]
-    },
-    "/home/sekiro/dexbot/AbacusV0_Private/src/test/Console.sol": {
-      "lastModificationDate": 1643658732242,
-      "contentHash": "f756579730c37ec6bd53643d93d88313",
-      "sourceName": "src/test/Console.sol",
-      "solcConfig": {
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "": [
-                "ast"
-              ],
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ]
-            }
-          },
-          "evmVersion": "london"
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.4.22 <0.9.0"
-      ],
-      "artifacts": [
-        "console"
       ]
     }
   }

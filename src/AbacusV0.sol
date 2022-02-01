@@ -221,16 +221,16 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
 
 /// @notice Function to calculate abacus fee amount.
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
-function calculatePayoutLessAbacusFee(uint amountOut, address _address) private view returns (uint) {
+function calculatePayoutLessAbacusFee(uint _amountOut, address _address) public view returns (uint) {
    
     /// @notice If the address has a custom fee, use the custom fee in the payout calculation, otherwise, use the default abacusFee
     uint customFeeMul1000 = addressToCustomFee[_address];
     if (customFeeMul1000 == 0){
-        uint abacusFee = (amountOut * (abacusFeeMul1000/1000));
-        return ((amountOut - abacusFee));
+        uint abacusFee = mulDiv(_amountOut, abacusFeeMul1000, 1000);
+        return ((_amountOut - abacusFee));
     }else{
-        uint abacusFee = (amountOut * (customFeeMul1000/1000));
-        return ((amountOut - abacusFee));
+        uint abacusFee = mulDiv(_amountOut, customFeeMul1000, 1000);
+        return ((_amountOut - abacusFee));
     }
  
 }
@@ -296,6 +296,22 @@ function transferOwnership(address _newOwner) external onlyOwner() {
     _owner=_newOwner;
 }
 
+
+/// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)
+function mulDiv(uint256 x,uint256 y,uint256 denominator) internal pure returns (uint256 z) {
+    assembly {
+        // Store x * y in z for now.
+        z := mul(x, y)
+
+        // Equivalent to require(denominator != 0 && (x == 0 || (x * y) / x == y))
+        if iszero(and(iszero(iszero(denominator)), or(iszero(x), eq(div(z, x), y)))) {
+            revert(0, 0)
+        }
+
+        // Divide z by the denominator.
+        z := div(z, denominator)
+    }
+}
 
 
 
