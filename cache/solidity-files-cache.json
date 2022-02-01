@@ -350,43 +350,9 @@
         "console"
       ]
     },
-    "/home/sekiro/dexbot/AbacusV0_Private/lib/utils/FixedPointMathLib.sol": {
-      "lastModificationDate": 1643677791765,
-      "contentHash": "7c29495473ccb42145c06841a7dcca1a",
-      "sourceName": "lib/utils/FixedPointMathLib.sol",
-      "solcConfig": {
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "": [
-                "ast"
-              ],
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ]
-            }
-          },
-          "evmVersion": "london"
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.8.0"
-      ],
-      "artifacts": [
-        "FixedPointMathLib"
-      ]
-    },
     "/home/sekiro/dexbot/AbacusV0_Private/src/AbacusV0.sol": {
-      "lastModificationDate": 1643681262268,
-      "contentHash": "9d4550d352a0ba456a566cb96daacd9b",
+      "lastModificationDate": 1643693317316,
+      "contentHash": "a16f56900a8f08561781f4c5e0c42173",
       "sourceName": "src/AbacusV0.sol",
       "solcConfig": {
         "settings": {
@@ -424,8 +390,8 @@
       ]
     },
     "/home/sekiro/dexbot/AbacusV0_Private/src/test/AbacusV0.t.sol": {
-      "lastModificationDate": 1643681430836,
-      "contentHash": "275959bb6bc77a03832da87133517480",
+      "lastModificationDate": 1643693381949,
+      "contentHash": "8d98160e05ac80753b4beed3b4861edf",
       "sourceName": "src/test/AbacusV0.t.sol",
       "solcConfig": {
         "settings": {
@@ -452,13 +418,12 @@
       "imports": [
         "../../lib/ds-test/src/test.sol",
         "../AbacusV0.sol",
-        "../../lib/utils/Console.sol",
-        "../../lib/utils/FixedPointMathLib.sol"
+        "../../lib/utils/Console.sol"
       ],
       "versionPragmas": [],
       "artifacts": [
         "AbacusV0Test",
-        "User"
+        "CheatCodes"
       ]
     }
   }

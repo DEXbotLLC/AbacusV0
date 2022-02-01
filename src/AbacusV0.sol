@@ -286,6 +286,7 @@ function removeCustomAbacusFeeFromEOA(address _address) external onlyOwner() {
 /// @notice Function to withdraw profits in native tokens from the contract.
 /// @notice It is important to mention that this has no effect on the operability of the contract. Even if there is a contract balance of zero, the contract still functions normally, allowing for completely trustless swaps. 
 function withdrawAbacusProfits(address _to, uint _amount) external onlyOwner() {
+    require(_amount>address(this).balance, "amt>bal");
     SafeTransferLib.safeTransferETH(_to, _amount);
 }
 
