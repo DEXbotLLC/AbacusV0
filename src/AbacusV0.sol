@@ -82,6 +82,8 @@ constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
 
     /// @notice Initialize the UniV3Router contract instance.
     UniV3Router = ISwapRouter(_uniV3Router);
+
+
 }
 
 /// @notice Modifier that checks if the msg.sender is the owner of the contract. The only functions that are set as onlyOwner() are setAbacusFee, setAbacusWallet and transferOwnership.
@@ -100,7 +102,6 @@ modifier onlyOwner() {
 /// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external {
-
     /// @notice Decode the call data.
     (uint _amountIn, uint _amountOutMin, address _tokenToSwap, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
@@ -108,7 +109,7 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
     address[] memory path = new address[](2);
     path[0]=_tokenToSwap;
     path[1]=wnatoAddress;
-
+    
     /// @notice Swap tokens for wrapped native tokens (nato).
     uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, path, address(this), _deadline)[1];
 

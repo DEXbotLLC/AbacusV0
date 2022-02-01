@@ -5,6 +5,7 @@ import "../../lib/ds-test/src/test.sol";
 import "../AbacusV0.sol";
 import "../../lib/utils/Console.sol";
 import "../../lib/IUniswapV2Router02.sol";
+import "../../lib/ERC20.sol";
  
 /// @dev to test, run `forge test --force -vvv`
 interface CheatCodes {
@@ -28,6 +29,9 @@ interface CheatCodes {
     //initialize the router for testing
     IUniswapV2Router02 _uniV2Router;
 
+    //address for testing swaps
+    address swapToken = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+
     function setUp() public {
          abacusV0 = new AbacusV0(_wnatoAddress, _uniV2Address, _uniV3Address);
          _uniV2Router=IUniswapV2Router02(_uniV2Address);
@@ -47,16 +51,23 @@ interface CheatCodes {
 
 
 
-    /// @notice TODO: test swapAndTransferUnwrappedNatoWithV2
+    /// @notice test swapAndTransferUnwrappedNatoWithV2
     function testswapAndTransferUnwrappedNatoWithV2() public {
         // give the abacusV0 contract eth
-        cheatCodes.deal(address(abacusV0), 9999999999999999999999999);
+        cheatCodes.deal(address(this), 9999999999999999999999999);
 
-        //swap eth for tokens
-        _uniV2Router.swapExactETHForTokens(0, path, address(this), (2**256-1)).value(100000000000000000);
-        
+        address[] memory path = new address[](2);
+        path[0]=_wnatoAddress;
+        path[1]= swapToken;
+
+
+        // swap eth for tokens
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
+
+        ERC20(swapToken).approve(_uniV2Address, (2**256-1));
+
         //encode the call data
-        bytes _callData = abi.encode(1000, 0, _tokenToSwap, (2**256-1));
+        bytes memory _callData = abi.encode(10000, 1, swapToken, (2**256-1));
         //swap and transfer unwrapped nato
         abacusV0.swapAndTransferUnwrappedNatoWithV2(_callData);
     }
@@ -105,16 +116,10 @@ interface CheatCodes {
     function testWithdrawAbacusProfits() public {
          // give the abacusV0 contract eth
         cheatCodes.deal(address(abacusV0), 9999999999999999999999999);
-
-        // print the balance
-        console.log(address(abacusV0).balance);
-
         //transfer eth, abstracted
         abacusV0.withdrawAbacusProfits(0x53A2C854F3cEA50bD54913649dBB2980D05980ad, 345342334534);
 
-        //print the balance after withdraw
-        console.log(address(abacusV0).balance);
-        
+        assertEq(address(abacusV0).balance, 9999999999999654657665465);
 
     }
 
