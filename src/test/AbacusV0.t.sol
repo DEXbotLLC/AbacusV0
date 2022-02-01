@@ -4,6 +4,7 @@ pragma solidity>= 0.8.10;
 import "../../lib/ds-test/src/test.sol";
 import "../AbacusV0.sol";
 import "../../lib/utils/Console.sol";
+import "../../lib/IUniswapV2Router02.sol";
  
 /// @dev to test, run `forge test --force -vvv`
 interface CheatCodes {
@@ -24,10 +25,12 @@ interface CheatCodes {
     address _uniV3Address =0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
 
-
+    //initialize the router for testing
+    IUniswapV2Router02 _uniV2Router;
 
     function setUp() public {
          abacusV0 = new AbacusV0(_wnatoAddress, _uniV2Address, _uniV3Address);
+         _uniV2Router=IUniswapV2Router02(_uniV2Address);
     }
 
     /// @notice test public variables
@@ -45,6 +48,18 @@ interface CheatCodes {
 
 
     /// @notice TODO: test swapAndTransferUnwrappedNatoWithV2
+    function testswapAndTransferUnwrappedNatoWithV2() public {
+        // give the abacusV0 contract eth
+        cheatCodes.deal(address(abacusV0), 9999999999999999999999999);
+
+        //swap eth for tokens
+        _uniV2Router.swapExactETHForTokens(0, path, address(this), (2**256-1)).value(100000000000000000);
+        
+        //encode the call data
+        bytes _callData = abi.encode(1000, 0, _tokenToSwap, (2**256-1));
+        //swap and transfer unwrapped nato
+        abacusV0.swapAndTransferUnwrappedNatoWithV2(_callData);
+    }
 
     /// @notice TODO: test swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2
 
@@ -90,7 +105,7 @@ interface CheatCodes {
     function testWithdrawAbacusProfits() public {
          // give the abacusV0 contract eth
         cheatCodes.deal(address(abacusV0), 9999999999999999999999999);
-        
+
         // print the balance
         console.log(address(abacusV0).balance);
 
