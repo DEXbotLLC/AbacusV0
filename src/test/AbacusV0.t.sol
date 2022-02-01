@@ -4,8 +4,7 @@ pragma solidity>= 0.8.10;
 import "../../lib/ds-test/src/test.sol";
 import "../AbacusV0.sol";
 import "../../lib/utils/Console.sol";
-import "../../lib/utils/FixedPointMathLib.sol";
-
+ 
 /// @dev to test, run `forge test --force -vvv`
 
 contract User {
@@ -15,7 +14,6 @@ contract User {
     AbacusV0 abacusV0;
     User user;
 
-    using FixedPointMathLib for uint;
 
     /// @notice set constructor variables depending on the network
 
@@ -45,13 +43,33 @@ contract User {
     }
 
 
+
+    /// @notice TODO: test swapAndTransferUnwrappedNatoWithV2
+
+    /// @notice TODO: test swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2
+
+    /// @notice TODO: test swapAndTransferUnwrappedNatoWithV3
+
+
+    /// @notice test calculatePayoutLessAbacusFee
+    function testCalculatePayoutLessAbacusFee() public {
+        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, address(0));
+        assertEq(payout,44209946);
+    }
+
+    /// @notice TODO: test approveAllSwapRouters
+
+    /// @notice TODO: test approveUniV2Router
+
+    /// @notice TODO: test approveUniV3Router
+
+
     /// @notice test setAbacusFee
     function testSetAbacusFee() public {
         abacusV0.setAbacusFee(25);
     }
 
-
-    // /// @notice test fail setAbacusFee with not owner as sender
+    /// @notice TODO: test fail setAbacusFee with not owner as sender
     // function testFailSetAbacusFee() public {
     // }
 
@@ -63,18 +81,11 @@ contract User {
     }
 
 
-    // /// @notice test fail testsetCustomAbacusFeeForEOA 
-    // function testFailSetCustomAbacusFeeForEOA() public {
-    //     abacusV0.setCustomAbacusFeeForEOA(0xea5C8c5a920a347B3C7D3C0CE297018D4aE5B2f1, 20);
-    //     assertEq(abacusV0.customFeeAddresses(0), 0xea5C8c5a920a347B3C7D3C0CE297018D4aE5B2f1);
-    //     assertEq(abacusV0.addressToCustomFee(0xea5C8c5a920a347B3C7D3C0CE297018D4aE5B2f1), 20);
-    // }
+    /// @notice TODO: test removeCustomAbacusFeeFromEOA
 
-    function testCalculatePayoutLessAbacusFee() public {
-        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, address(0));
-        assertEq(payout,44209946);
-    }
+    /// @notice TODO: test withdrawAbacusProfits
 
+    /// @notice TODO: test transferOwnership
 
 
 }

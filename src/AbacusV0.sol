@@ -260,8 +260,6 @@ function approveUniV3Router(address _tokenAddress, uint _amount) public {
 function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
     require(_abacusFeeMul1000>=0 && _abacusFeeMul1000<MAX_ABACUS_FEE_MUL_1000, "!fee<max");
     abacusFeeMul1000=_abacusFeeMul1000;
-
-
     /// @notice For each address that has a custom fee, if the custom fee is greater than the new abacus fee, reduce their custom fee to the new abacus fee
     if (customFeeAddresses.length>0){
         for (uint i=0; i<customFeeAddresses.length-1; i++) {
