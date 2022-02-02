@@ -6,7 +6,6 @@ import "../lib/IUniswapV2Router02.sol";
 import "../lib/ISwapRouter.sol";
 import "../lib/WETH.sol";
 
-
 //TODO: set custom fee mapping and a function that is onlyOwner to set the custom fees
 
 
@@ -16,7 +15,8 @@ import "../lib/WETH.sol";
 /// @notice In plain english, DEXbot is an automated way to sell your tokens. This contract allows DEXbot's off-chain logic to create swap transactions and return the payout to the msg.sender trustlessly.
 /// @dev The DEXbot client source code is open source. You can check out how it works or read the whitepaper here: (https://github.com/DEXbotLLC/DEXbot_Client).
 contract AbacusV0 {
-    
+
+
     /// @notice The EOA address that owns the contract. This is set to the msg.sender initially at deployment. In this contract, the _owner can update the abacus fee (which can never be > 3%), set the abacus wallet or transfer ownership. 
     address private _owner;
     
@@ -49,6 +49,9 @@ contract AbacusV0 {
  
     /// @notice Mapping to hold custom abacus fees for specific externally owned wallets to reduce fees for that wallet.
     mapping (address=>uint) public addressToCustomFee;
+        //FIXME: use this for fees, wallet -> token -> fee
+        mapping(address => mapping(address => uint256)) public allowance;
+
 
     /// @notice list of addresses that have custom fees
     address[] public customFeeAddresses;
@@ -74,11 +77,11 @@ constructor(address _wnatoAddress, address _uniV2Router, address _uniV3Router){
     /// @notice Initialize the UniV2Router address.
     uniV2RouterAddress=_uniV2Router;
 
-    /// @notice Initialize the UniV3Router address.
-    uniV3RouterAddress=_uniV3Router;
-
     /// @notice Initialize the UniV2Router contract instance.
     UniV2Router = IUniswapV2Router02(_uniV2Router);
+
+    /// @notice Initialize the UniV3Router address.
+    uniV3RouterAddress=_uniV3Router;
 
     /// @notice Initialize the UniV3Router contract instance.
     UniV3Router = ISwapRouter(_uniV3Router);
@@ -102,6 +105,7 @@ modifier onlyOwner() {
 /// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external {
+
     /// @notice Decode the call data.
     (uint _amountIn, uint _amountOutMin, address _tokenToSwap, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
@@ -109,7 +113,10 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
     address[] memory path = new address[](2);
     path[0]=_tokenToSwap;
     path[1]=wnatoAddress;
-    
+
+    /// @notice Send the tokens to the Abacus contract
+    SafeTransferLib.safeTransferFrom(ERC20(_tokenToSwap), msg.sender, address(this), _amountIn);
+
     /// @notice Swap tokens for wrapped native tokens (nato).
     uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, path, address(this), _deadline)[1];
 
@@ -150,7 +157,6 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
     address[] memory path = new address[](2);
     path[0]=_tokenToSwap;
     path[1]=wnatoAddress;
-
 
     /// @dev It is necessary to get the wrapped native token balance before and after the swap because swapExactTokensForTokensSupportingFeeOnTransferTokens does not return the amountOut from the swap.
     uint balanceBefore = _wnato.balanceOf(address(this));
@@ -233,7 +239,6 @@ function calculatePayoutLessAbacusFee(uint _amountOut, address _address) public 
         uint abacusFee = mulDiv(_amountOut, customFeeMul1000, 1000);
         return ((_amountOut - abacusFee));
     }
- 
 }
 
 
@@ -276,6 +281,37 @@ function withdrawAbacusProfits(address _to, uint _amount) external onlyOwner() {
 function transferOwnership(address _newOwner) external onlyOwner() {
     _owner=_newOwner;
 }
+
+
+/// @notice TODO: Check approved
+function checkApproved(address _token, uint _amount)external view returns (bool) {
+    uint256 amount = ERC20(_token).allowance(_token,address(this));
+    if (amount < _amount) {
+        return false;
+    }else{
+        return true;
+    }
+} 
+
+/// @notice approve all swap routers
+
+function approveAllSwapRouters(address _token, uint _amount) external {
+    approveUniV2Router(_token, _amount);
+    approveUniV3Router(_token, _amount);
+}
+
+/// @notice approve univ2 router
+function approveUniV2Router(address _token, uint _amount) public {
+    ERC20(_token).approve(uniV2RouterAddress, _amount);
+}
+
+/// @notice approve univ3 router
+function approveUniV3Router(address _token, uint _amount) public {
+    ERC20(_token).approve(uniV3RouterAddress, _amount);
+}
+
+
+
 
 
 /// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)

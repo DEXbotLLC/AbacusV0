@@ -100,7 +100,7 @@ abstract contract ERC20 {
         if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - amount;
 
         balanceOf[from] -= amount;
-
+ 
         // Cannot overflow because the sum of all user
         // balances can't exceed the max uint256 value.
         unchecked {

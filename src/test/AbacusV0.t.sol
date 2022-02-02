@@ -6,6 +6,7 @@ import "../AbacusV0.sol";
 import "../../lib/utils/Console.sol";
 import "../../lib/IUniswapV2Router02.sol";
 import "../../lib/ERC20.sol";
+import "../../lib/utils/Console.sol";
  
 /// @dev to test, run `forge test --force -vvv`
 interface CheatCodes {
@@ -56,19 +57,22 @@ interface CheatCodes {
         // give the abacusV0 contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
 
+        //set the path
         address[] memory path = new address[](2);
         path[0]=_wnatoAddress;
         path[1]= swapToken;
 
-
         // swap eth for tokens
         _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
 
+        //approve the abacusV0 to interact with the swapToken
         ERC20(swapToken).approve(_uniV2Address, (2**256-1));
+
 
         //encode the call data
         bytes memory _callData = abi.encode(10000, 1, swapToken, (2**256-1));
-        //swap and transfer unwrapped nato
+
+        // swap and transfer unwrapped nato
         abacusV0.swapAndTransferUnwrappedNatoWithV2(_callData);
     }
 
