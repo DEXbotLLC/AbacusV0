@@ -47,14 +47,8 @@ contract AbacusV0 {
     /// @notice This value is divided by 1000 during calculations so with the maximum fee being 30, it can be expressed during calculations as MAX_ABACUS_FEE_MUL_1000/1000 which equals 30/1000 or .03 or 3%.
     uint constant MAX_ABACUS_FEE_MUL_1000 = 30 ;
  
-    /// @notice Mapping to hold custom abacus fees for specific externally owned wallets to reduce fees for that wallet.
-    mapping (address=>uint) public addressToCustomFee;
-        //FIXME: use this for fees, wallet -> token -> fee
-        mapping(address => mapping(address => uint256)) public allowance;
-
-
-    /// @notice list of addresses that have custom fees
-    address[] public customFeeAddresses;
+    /// @notice Mapping to hold custom abacus fees for specific externally owned wallets to reduce fees for that wallet. Mapping is wallet address -> token address -> custom fee
+    mapping(address => mapping(address => uint256)) public addressToCustomFee;
 
 /// @notice Constructor to initialize the contract on deployment.
 /// @param _wnatoAddress The wrapped native token address (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
@@ -100,22 +94,22 @@ modifier onlyOwner() {
 /// @dev To create the abi encoded calldata, simply use abi.encode(_amountIn,_amountOutMin,_tokenToSwap,_deadline).
 /// @dev _amountIn is the exact amount of tokens you want to swap.
 /// @dev _amountOutMin is the minimum amount of tokens you want resulting from the swap.
-/// @dev _tokenToSwap is the address of the token that you want to swap from (Ex. When swapping from $LINK to $ETH, _tokenToSwap is the address for $LINK).
+/// @dev _tokenIn is the address of the token that you want to swap from (Ex. When swapping from $LINK to $ETH, _tokenToSwap is the address for $LINK).
 /// @dev _deadline is the unix time after which a swap will fail, to protect against long-pending transactions and wild swings in prices.
 /// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external {
 
     /// @notice Decode the call data.
-    (uint _amountIn, uint _amountOutMin, address _tokenToSwap, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
+    (uint _amountIn, uint _amountOutMin, address _tokenIn, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
     /// @notice Set the routing path for the swap to be _tokenToSwap to wnatoAddress
     address[] memory path = new address[](2);
-    path[0]=_tokenToSwap;
+    path[0]=_tokenIn;
     path[1]=wnatoAddress;
 
     /// @notice Send the tokens to the Abacus contract
-    SafeTransferLib.safeTransferFrom(ERC20(_tokenToSwap), msg.sender, address(this), _amountIn);
+    SafeTransferLib.safeTransferFrom(ERC20(_tokenIn), msg.sender, address(this), _amountIn);
 
     /// @notice Swap tokens for wrapped native tokens (nato).
     uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, path, address(this), _deadline)[1];
@@ -131,7 +125,38 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
+
+    /// @notice Send the payout (amount out less abacus fee) to the msg.sender
+    SafeTransferLib.safeTransferETH(msg.sender, payout);
+}
+
+
+function sattest (bytes calldata _callData) external {
+
+    /// @notice Decode the call data.
+    (uint _amountIn, uint _amountOutMin, address _tokenIn, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
+
+    /// @notice Set the routing path for the swap to be _tokenToSwap to wnatoAddress
+    address[] memory path = new address[](2);
+    path[0]=_tokenIn;
+    path[1]=wnatoAddress;
+
+    /// @notice Swap tokens for wrapped native tokens (nato).
+    uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, path, msg.sender, _deadline)[1];
+
+    /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
+    /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
+    /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
+    /// @dev The contract can always send the amountRecieved even when it does not have enough native token balance. The contract will unwrap it's wrapped native tokens and then send the amountRecieved to the user. 
+    if (amountRecieved>address(this).balance){
+        /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
+        _wnato.withdraw(_wnato.balanceOf(address(this)));
+
+    }
+
+    /// @notice Calculate the payout less abacus fee.
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -143,19 +168,19 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
 /// @dev To create the abi encoded calldata, simply use abi.encode(_amountIn,_amountOutMin,_tokenToSwap,_deadline).
 /// @dev _amountIn is the exact amount of tokens you want to swap.
 /// @dev _amountOutMin is the minimum amount of tokens you want resulting from the swap.
-/// @dev _tokenToSwap is the address of the token that you want to swap from (Ex. When swapping from $LINK to $ETH, _tokenToSwap is the address for $LINK).
+/// @dev _tokenIn is the address of the token that you want to swap from (Ex. When swapping from $LINK to $ETH, _tokenToSwap is the address for $LINK).
 /// @dev _deadline is the unix time after which a swap will fail, to protect against long-pending transactions and wild swings in prices.
 /// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes calldata _callData) external {
 
     /// @notice Decode the call data.
-    (uint _amountIn, uint _amountOutMin, address _tokenToSwap, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
+    (uint _amountIn, uint _amountOutMin, address _tokenIn, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
 
     /// @notice Set the routing path for the swap to be _tokenToSwap to wnatoAddress
     address[] memory path = new address[](2);
-    path[0]=_tokenToSwap;
+    path[0]=_tokenIn;
     path[1]=wnatoAddress;
 
     /// @dev It is necessary to get the wrapped native token balance before and after the swap because swapExactTokensForTokensSupportingFeeOnTransferTokens does not return the amountOut from the swap.
@@ -178,7 +203,7 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -219,7 +244,7 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -228,10 +253,10 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
 
 /// @notice Function to calculate abacus fee amount.
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
-function calculatePayoutLessAbacusFee(uint _amountOut, address _address) public view returns (uint) {
+function calculatePayoutLessAbacusFee(uint _amountOut, address _address, address _token) public view returns (uint) {
    
     /// @notice If the address has a custom fee, use the custom fee in the payout calculation, otherwise, use the default abacusFee
-    uint customFeeMul1000 = addressToCustomFee[_address];
+    uint customFeeMul1000 = addressToCustomFee[_address][_token];
     if (customFeeMul1000 == 0){
         uint abacusFee = mulDiv(_amountOut, abacusFeeMul1000, 1000);
         return ((_amountOut - abacusFee));
@@ -247,27 +272,18 @@ function calculatePayoutLessAbacusFee(uint _amountOut, address _address) public 
 function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
     require(_abacusFeeMul1000>=0 && _abacusFeeMul1000<MAX_ABACUS_FEE_MUL_1000, "!fee<max");
     abacusFeeMul1000=_abacusFeeMul1000;
-    /// @notice For each address that has a custom fee, if the custom fee is greater than the new abacus fee, reduce their custom fee to the new abacus fee
-    if (customFeeAddresses.length>0){
-        for (uint i=0; i<customFeeAddresses.length-1; i++) {
-            address _customFeeAddress=customFeeAddresses[i]; 
-            if (addressToCustomFee[_customFeeAddress] >_abacusFeeMul1000){
-                addressToCustomFee[_customFeeAddress]=_abacusFeeMul1000;
-            }
-        }
-    }
+    /// @dev NOTICE! If you change the abacus fee, it does not change the custom abacus fees, so you must change those separately. This is to avoid large gas fees from looping through lists.
 }
 
 /// @notice Function to set a custom abacus fee for specific wallet
-function setCustomAbacusFeeForEOA(address _address, uint _customFeeMul1000) external onlyOwner() {
+function setCustomAbacusFeeForEOA(address _address, address _token, uint _customFeeMul1000) external onlyOwner() {
     require(_customFeeMul1000<=MAX_ABACUS_FEE_MUL_1000);
-    addressToCustomFee[_address]=_customFeeMul1000;
-    customFeeAddresses.push(_address);
+    addressToCustomFee[_address][_token] =_customFeeMul1000;
 }
 
 /// @notice Function to set a custom abacus fee for specific wallet
-function removeCustomAbacusFeeFromEOA(address _address) external onlyOwner() {
-    delete addressToCustomFee[_address];
+function removeCustomAbacusFeeFromEOA(address _address, address _token) external onlyOwner() {
+    delete addressToCustomFee[_address][_token];
 }
 
 /// @notice Function to withdraw profits in native tokens from the contract.
@@ -294,7 +310,6 @@ function checkApproved(address _token, uint _amount)external view returns (bool)
 } 
 
 /// @notice approve all swap routers
-
 function approveAllSwapRouters(address _token, uint _amount) external {
     approveUniV2Router(_token, _amount);
     approveUniV3Router(_token, _amount);
