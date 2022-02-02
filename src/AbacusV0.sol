@@ -196,6 +196,9 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
     path[0]=_tokenIn;
     path[1]=wnatoAddress;
 
+    /// @notice Send the tokens to the Abacus contract
+    SafeTransferLib.safeTransferFrom(ERC20(_tokenIn), msg.sender, address(this), _amountIn);
+
     /// @dev It is necessary to get the wrapped native token balance before and after the swap because swapExactTokensForTokensSupportingFeeOnTransferTokens does not return the amountOut from the swap.
     uint balanceBefore = _wnato.balanceOf(address(this));
 
@@ -228,11 +231,17 @@ function approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 
     /// @notice Decode the call data.
     (uint _amountIn, uint _amountOutMin, address _tokenIn, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
+    /// @notice Send the tokens to the Abacus contract
+    SafeTransferLib.safeTransferFrom(ERC20(_tokenIn), msg.sender, address(this), _amountIn);
 
     /// @notice Set the routing path for the swap to be _tokenToSwap to wnatoAddress
     address[] memory path = new address[](2);
     path[0]=_tokenIn;
     path[1]=wnatoAddress;
+
+
+    /// @notice Send the tokens to the Abacus contract
+    SafeTransferLib.safeTransferFrom(ERC20(_tokenIn), msg.sender, address(this), _amountIn);
 
     /// @dev It is necessary to get the wrapped native token balance before and after the swap because swapExactTokensForTokensSupportingFeeOnTransferTokens does not return the amountOut from the swap.
     uint balanceBefore = _wnato.balanceOf(address(this));
@@ -284,6 +293,40 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
     /// @notice Decode the call data.
     (address _tokenIn, uint24 _fee ,uint256 _deadline,uint256 _amountIn, uint256 _amountOutMinimum, uint160 _sqrtPriceLimitX96) = abi.decode(_callData, (address,uint24,uint256,uint256,uint256,uint160));
 
+    /// @notice Send the tokens to the Abacus contract
+    SafeTransferLib.safeTransferFrom(ERC20(_tokenIn), msg.sender, address(this), _amountIn);
+
+    ///@notice Swap exact input tokens for maximum amount of wrapped native tokens.
+    uint amountRecieved = UniV3Router.exactInputSingle(ISwapRouter.ExactInputSingleParams(_tokenIn, wnatoAddress, _fee, address(this), _deadline, _amountIn, _amountOutMinimum, _sqrtPriceLimitX96));
+
+    /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
+    /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
+    /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
+    /// @dev The contract can always send the amountRecieved even when it does not have enough native token balance. The contract will unwrap it's wrapped native tokens and then send the amountRecieved to the user. 
+    if (amountRecieved>address(this).balance){
+        /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
+        _wnato.withdraw(_wnato.balanceOf(address(this)));
+    }
+
+    /// @notice Calculate the payout less abacus fee.
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
+
+    /// @notice Send the payout (amount out less abacus fee) to the msg.sender
+    SafeTransferLib.safeTransferETH(msg.sender, payout);
+
+}
+
+function approveSwapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external {
+
+    /// @notice Decode the call data.
+    (address _tokenIn, uint24 _fee ,uint256 _deadline, uint256 _amountIn, uint256 _amountOutMinimum, uint160 _sqrtPriceLimitX96) = abi.decode(_callData, (address,uint24,uint256,uint256,uint256,uint160));
+
+    /// @notice Send the tokens to the Abacus contract
+    SafeTransferLib.safeTransferFrom(ERC20(_tokenIn), msg.sender, address(this), _amountIn);
+
+    /// @notice approve the swap router to interact with the token 
+    approveUniV3Router(_tokenIn, (2**256-1));
+    
     ///@notice Swap exact input tokens for maximum amount of wrapped native tokens.
     uint amountRecieved = UniV3Router.exactInputSingle(ISwapRouter.ExactInputSingleParams(_tokenIn, wnatoAddress, _fee, address(this), _deadline, _amountIn, _amountOutMinimum, _sqrtPriceLimitX96));
 

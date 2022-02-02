@@ -29,8 +29,7 @@ interface CheatCodes {
     /// @notice variables for eth l1
     address _wnatoAddress = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address _uniV2Address = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-    /// @notice set univ3 router to 0 for now
-    address _uniV3Address =0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    address _uniV3Address = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
 
     //initialize the router for testing
@@ -86,8 +85,35 @@ interface CheatCodes {
     }
 
 
+    // /// @notice TODO: test swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2
+    // function testApproveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2() public {
+    //     // give the abacusV0 contract eth
+    //     cheatCodes.deal(address(this), 9999999999999999999999999);
+
+    //     //set the path
+    //     address[] memory path = new address[](2);
+    //     path[0]=_wnatoAddress;
+    //     path[1]= swapToken;
+
+    //     // swap eth for tokens
+    //     _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
+
+    //     //approve the abacusV0 to interact with the swapToken
+    //     ERC20(swapToken).approve(address(abacusV0), (2**256-1));
+        
+
+    //     //encode the call data
+    //     bytes memory _callData = abi.encode(10000000000, 1, swapToken, (2**256-1));
+
+    //     // swap and transfer unwrapped nato
+    //     abacusV0.approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(_callData);
+    // }
+
+
+    /// @notice TODO: test swapAndTransferUnwrappedNatoWithV3
+
     /// @notice TODO: test swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2
-    function testApproveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2() public {
+    function testApproveSwapAndTransferUnwrappedNatoWithV3() public {
         // give the abacusV0 contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
 
@@ -103,15 +129,14 @@ interface CheatCodes {
         ERC20(swapToken).approve(address(abacusV0), (2**256-1));
         
 
-        //encode the call data
-        bytes memory _callData = abi.encode(10000000000, 1, swapToken, (2**256-1));
+        //encode the call data, fee is set to .3%
+        bytes memory _callData = abi.encode(swapToken, 3000, (2**256-1), 10000000000, 1, 0);
+
 
         // swap and transfer unwrapped nato
-        abacusV0.approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(_callData);
+        abacusV0.approveSwapAndTransferUnwrappedNatoWithV3(_callData);
     }
 
-
-    /// @notice TODO: test swapAndTransferUnwrappedNatoWithV3
 
 
     /// @notice test calculatePayoutLessAbacusFee
