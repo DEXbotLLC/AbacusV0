@@ -2,8 +2,8 @@
   "_format": "ethers-rs-sol-cache-1",
   "files": {
     "/home/sekiro/dexbot/AbacusV0_Private/lib/ERC20.sol": {
-      "lastModificationDate": 1643345713677,
-      "contentHash": "e2c22aed19719e4909dbd84d07295e2b",
+      "lastModificationDate": 1643770008615,
+      "contentHash": "1c7c19fcdcc6e89c4654cc493dcd8d23",
       "sourceName": "lib/ERC20.sol",
       "solcConfig": {
         "settings": {
@@ -351,8 +351,8 @@
       ]
     },
     "/home/sekiro/dexbot/AbacusV0_Private/src/AbacusV0.sol": {
-      "lastModificationDate": 1643756051863,
-      "contentHash": "69546b8528a5a127613c7f4a6723af1c",
+      "lastModificationDate": 1643821094009,
+      "contentHash": "e19898e0483209afd9b6a5547b49c522",
       "sourceName": "src/AbacusV0.sol",
       "solcConfig": {
         "settings": {
@@ -390,8 +390,8 @@
       ]
     },
     "/home/sekiro/dexbot/AbacusV0_Private/src/test/AbacusV0.t.sol": {
-      "lastModificationDate": 1643757173888,
-      "contentHash": "e09596328c43b0de38ddb79e9dce21c2",
+      "lastModificationDate": 1643821120993,
+      "contentHash": "4a5ae04be3e25b77f7da3648cec3dba1",
       "sourceName": "src/test/AbacusV0.t.sol",
       "solcConfig": {
         "settings": {

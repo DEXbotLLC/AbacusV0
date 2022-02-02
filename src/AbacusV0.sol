@@ -89,6 +89,14 @@ modifier onlyOwner() {
     _;
 }
 
+
+receive() external payable {
+}
+
+fallback() external payable {
+}
+
+
 /// @notice This function uses a UniV2 compatible router to swap a token for the wrapped native token, unwraps the native token and sends the amountOut minus the abacus fee back to the msg.sender.
 /// @param _callData This param is abi encoded bytes containing the amountIn and the amountOutMin for the swap, the token to swap from and the transaction deadline for the swap.  
 /// @dev To create the abi encoded calldata, simply use abi.encode(_amountIn,_amountOutMin,_tokenToSwap,_deadline).
@@ -121,7 +129,6 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
     if (amountRecieved>address(this).balance){
         /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
         _wnato.withdraw(_wnato.balanceOf(address(this)));
-
     }
 
     /// @notice Calculate the payout less abacus fee.
@@ -132,7 +139,8 @@ function swapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external 
 }
 
 
-function sattest (bytes calldata _callData) external {
+
+function approveSwapAndTransferUnwrappedNatoWithV2 (bytes calldata _callData) external payable {
 
     /// @notice Decode the call data.
     (uint _amountIn, uint _amountOutMin, address _tokenIn, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
@@ -142,8 +150,14 @@ function sattest (bytes calldata _callData) external {
     path[0]=_tokenIn;
     path[1]=wnatoAddress;
 
+    /// @notice Send the tokens to the Abacus contract
+    SafeTransferLib.safeTransferFrom(ERC20(_tokenIn), msg.sender, address(this), _amountIn);
+
+    /// @notice approve the swap router to interact with the token 
+    approveUniV2Router(_tokenIn, (2**256-1));
+
     /// @notice Swap tokens for wrapped native tokens (nato).
-    uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, path, msg.sender, _deadline)[1];
+    uint amountRecieved = UniV2Router.swapExactTokensForTokens(_amountIn, _amountOutMin, path, address(this), _deadline)[1];
 
     /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
     /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
@@ -152,7 +166,6 @@ function sattest (bytes calldata _callData) external {
     if (amountRecieved>address(this).balance){
         /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
         _wnato.withdraw(_wnato.balanceOf(address(this)));
-
     }
 
     /// @notice Calculate the payout less abacus fee.
@@ -192,6 +205,47 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
     /// @dev Subtract the new balance of wrapped native tokens from the balance before to get the amountRecieved from the swap.
     uint amountRecieved = _wnato.balanceOf(address(this)) - balanceBefore;
 
+    /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
+    /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
+    /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
+    /// @dev The contract can always send the amountRecieved even when it does not have enough native token balance. The contract will unwrap it's wrapped native tokens and then send the amountRecieved to the user. 
+    if (amountRecieved>address(this).balance){
+        /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
+        _wnato.withdraw(_wnato.balanceOf(address(this)));
+
+    }
+
+    /// @notice Calculate the payout less abacus fee.
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
+
+    /// @notice Send the payout (amount out less abacus fee) to the msg.sender
+    SafeTransferLib.safeTransferETH(msg.sender, payout);
+}
+
+
+function approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes calldata _callData) external {
+
+    /// @notice Decode the call data.
+    (uint _amountIn, uint _amountOutMin, address _tokenIn, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
+
+
+    /// @notice Set the routing path for the swap to be _tokenToSwap to wnatoAddress
+    address[] memory path = new address[](2);
+    path[0]=_tokenIn;
+    path[1]=wnatoAddress;
+
+    /// @dev It is necessary to get the wrapped native token balance before and after the swap because swapExactTokensForTokensSupportingFeeOnTransferTokens does not return the amountOut from the swap.
+    uint balanceBefore = _wnato.balanceOf(address(this));
+
+    /// @notice Swap tokens supporting fee on transfer tokens for wrapped native tokens (nato).
+    UniV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(_amountIn, _amountOutMin, path, address(this), _deadline);
+   
+    /// @dev Subtract the new balance of wrapped native tokens from the balance before to get the amountRecieved from the swap.
+    uint amountRecieved = _wnato.balanceOf(address(this)) - balanceBefore;
+
+    /// @notice approve the swap router to interact with the token 
+    approveUniV2Router(_tokenIn, (2**256-1));
+    
     /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
     /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
     /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
@@ -310,18 +364,18 @@ function checkApproved(address _token, uint _amount)external view returns (bool)
 } 
 
 /// @notice approve all swap routers
-function approveAllSwapRouters(address _token, uint _amount) external {
+function approveAllSwapRouters(address _token, uint _amount) private {
     approveUniV2Router(_token, _amount);
     approveUniV3Router(_token, _amount);
 }
 
 /// @notice approve univ2 router
-function approveUniV2Router(address _token, uint _amount) public {
+function approveUniV2Router(address _token, uint _amount) private {
     ERC20(_token).approve(uniV2RouterAddress, _amount);
 }
 
 /// @notice approve univ3 router
-function approveUniV3Router(address _token, uint _amount) public {
+function approveUniV3Router(address _token, uint _amount) private {
     ERC20(_token).approve(uniV3RouterAddress, _amount);
 }
 
