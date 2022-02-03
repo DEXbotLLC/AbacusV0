@@ -230,13 +230,12 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
 
 function approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes calldata _callData) external {
 
+
     /// @notice Decode the call data.
     (uint _amountIn, uint _amountOutMin, address _tokenIn, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
     /// @notice Send the tokens to the Abacus contract
     ERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
-
-
 
     /// @notice approve the swap router to interact with the token 
     approveUniV2Router(_tokenIn, (2**256-1));
@@ -397,7 +396,6 @@ function transferOwnership(address _newOwner) external onlyOwner() {
 }
 
 
-/// @notice TODO: Check approved
 function checkApproved(address _token, uint _amount)external view returns (bool) {
     uint256 amount = ERC20(_token).allowance(_token,address(this));
     if (amount < _amount) {
@@ -422,9 +420,6 @@ function approveUniV2Router(address _token, uint _amount) private {
 function approveUniV3Router(address _token, uint _amount) private {
     ERC20(_token).approve(uniV3RouterAddress, _amount);
 }
-
-
-
 
 
 /// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)

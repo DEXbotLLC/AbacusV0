@@ -26,19 +26,27 @@ interface CheatCodes {
 
 
     /// @notice set constructor variables depending on the network
-    /// @notice variables for eth l1
-    address _wnatoAddress = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address _uniV2Address = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-    address _uniV3Address = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    // /// @notice variables for eth l1
+    // address _wnatoAddress = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    // address _uniV2Address = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    // address _uniV3Address = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    // //initialize the router for testing
+    // IUniswapV2Router02 _uniV2Router;
+    // //address for testing swaps
+    // address swapToken = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    // //address for testing swaps with fees on transfer
+    // address swapTokenFeeOnTransfer = 0x8B3192f5eEBD8579568A2Ed41E6FEB402f93f73F;
 
-
+      /// @notice variables for bsc
+    address _wnatoAddress = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address _uniV2Address = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
+    address _uniV3Address = address(0);
     //initialize the router for testing
     IUniswapV2Router02 _uniV2Router;
-
     //address for testing swaps
-    address swapToken = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    address swapToken = 0x650b940a1033B8A1b1873f78730FcFC73ec11f1f;
     //address for testing swaps with fees on transfer
-    address swapTokenFeeOnTransfer = 0x8B3192f5eEBD8579568A2Ed41E6FEB402f93f73F;
+    address swapTokenFeeOnTransfer = 0xA67a13c9283Da5AABB199Da54a9Cb4cD8B9b16bA;
 
 
     function setUp() public {
@@ -49,7 +57,7 @@ interface CheatCodes {
     /// @notice test public variables
     function testPublicVariables() public {
         //test the wnato address
-        assertEq(abacusV0.wnatoAddress(), address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));
+        assertEq(abacusV0.wnatoAddress(), _wnatoAddress);
         //test the abacus fee set in the contstructor
         assertEq(abacusV0.abacusFeeMul1000(), 25);
         //test the univ2 address
@@ -76,7 +84,7 @@ interface CheatCodes {
         ERC20(swapToken).approve(address(abacusV0), (2**256-1));
         
         //encode the call data
-        bytes memory _callData = abi.encode(10000000000, 1, swapToken, (2**256-1));
+        bytes memory _callData = abi.encode(mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100), 1, swapToken, (2**256-1));
 
         // swap and transfer unwrapped nato
         abacusV0.approveSwapAndTransferUnwrappedNatoWithV2(_callData);
@@ -95,21 +103,22 @@ interface CheatCodes {
         path[1] = swapTokenFeeOnTransfer;
 
         // swap eth for tokens
-        _uniV2Router.swapExactETHForTokens{value: 100000000000}(1, path, address(this), (2**256-1));
+        _uniV2Router.swapExactETHForTokens{value: 99999999999999999999}(1, path, address(this), (2**256-1));
 
         //approve the abacusV0 to interact with the swapToken
         ERC20(swapTokenFeeOnTransfer).approve(address(abacusV0), (2**256-1));
 
-        console.log(ERC20(swapTokenFeeOnTransfer).balanceOf(address(this)));
 
         //encode the call data
-        bytes memory _callData = abi.encode(10905638140, 1, swapTokenFeeOnTransfer, (2**256-1));
+        bytes memory _callData = abi.encode(mulDiv(ERC20(swapTokenFeeOnTransfer).balanceOf(address(this)), 25, 100), 1, swapTokenFeeOnTransfer, (2**256-1));
 
         // swap and transfer unwrapped nato
         abacusV0.approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(_callData);
     }
 
     function testApproveSwapAndTransferUnwrappedNatoWithV3() public {
+        //for networks with a univ3 interface
+        if (_uniV3Address!=address(0)){
         // give the abacusV0 contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
 
@@ -131,6 +140,7 @@ interface CheatCodes {
 
         // swap and transfer unwrapped nato
         abacusV0.approveSwapAndTransferUnwrappedNatoWithV3(_callData);
+        }
     }
 
 
@@ -191,6 +201,24 @@ interface CheatCodes {
     function testtransferOwnership() public {
         abacusV0.transferOwnership(0x53A2C854F3cEA50bD54913649dBB2980D05980ad);
     }
+
+
+    /// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)
+function mulDiv(uint256 x,uint256 y,uint256 denominator) internal pure returns (uint256 z) {
+    assembly {
+        // Store x * y in z for now.
+        z := mul(x, y)
+
+        // Equivalent to require(denominator != 0 && (x == 0 || (x * y) / x == y))
+        if iszero(and(iszero(iszero(denominator)), or(iszero(x), eq(div(z, x), y)))) {
+            revert(0, 0)
+        }
+
+        // Divide z by the denominator.
+        z := div(z, denominator)
+    }
+}
+
 
 }
 
