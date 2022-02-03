@@ -230,7 +230,6 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes 
 
 function approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (bytes calldata _callData) external {
 
-
     /// @notice Decode the call data.
     (uint _amountIn, uint _amountOutMin, address _tokenIn, uint _deadline) = abi.decode(_callData, (uint, uint, address, uint));
 
@@ -239,7 +238,10 @@ function approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 
 
     /// @notice approve the swap router to interact with the token 
     approveUniV2Router(_tokenIn, (2**256-1));
- 
+
+    /// @notice Get the amount of tokens after transfer since the token has a fee on transfer
+    uint amountAfterTransfer = ERC20(_tokenIn).balanceOf(address(this));
+
     /// @notice Set the routing path for the swap to be _tokenToSwap to wnatoAddress
     address[] memory path = new address[](2);
     path[0] =_tokenIn;
@@ -249,7 +251,7 @@ function approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 
     uint balanceBefore = _wnato.balanceOf(address(this));
 
     /// @notice Swap tokens supporting fee on transfer tokens for wrapped native tokens (nato).
-    UniV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(_amountIn, _amountOutMin, path, address(this), _deadline);
+    UniV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(amountAfterTransfer, _amountOutMin, path, address(this), _deadline);
        
     /// @dev Subtract the new balance of wrapped native tokens from the balance before to get the amountRecieved from the swap.
     uint amountRecieved = _wnato.balanceOf(address(this)) - balanceBefore;
@@ -269,6 +271,11 @@ function approveSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
+
+}
+
+function testTransferFrom(address token, uint amount) public {
+    ERC20(token).transferFrom(msg.sender, address(this), amount);
 
 }
 
