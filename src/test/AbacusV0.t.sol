@@ -43,7 +43,7 @@ interface CheatCodes {
     address swapTokenFeeOnTransfer = 0x8B3192f5eEBD8579568A2Ed41E6FEB402f93f73F;
 
     function setUp() public {
-         abacusV0 = new AbacusV0(_wnatoAddress, _uniV2Address, _uniV3Address);
+         abacusV0 = new AbacusV0(_wnatoAddress, _uniV3Address);
          _uniV2Router=IUniswapV2Router02(_uniV2Address);
          _uniV2Factory=IUniswapV2Factory(_uniV2FactoryAddress);
 
@@ -74,21 +74,82 @@ interface CheatCodes {
         _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
 
 
-     //approve the abacusV0 to interact with the swapToken
+        //approve the abacusV0 to interact with the swapToken
         ERC20(swapToken).approve(address(abacusV0), (2**256-1));
-        
 
-//--------------------test swap function
-        //encode the call data
-        bytes memory _callData = abi.encode(_uniV2Factory.getPair(swapToken, _wnatoAddress), mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100), 1999, swapToken, (2**256-1));
+        address lp =_uniV2Factory.getPair(swapToken, _wnatoAddress);
 
+        uint amountIn =mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+
+        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+
+        //calculate the amountOut
+        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+                
         // swap and transfer unwrapped nato
-        abacusV0.swapAndTransferUnwrappedNatoWithV2(_callData);
+        abacusV0.swapAndTransferUnwrappedNatoWithV2(lp, amountIn, amountOut, swapToken);
     }
 
 
 
 
+    /// @notice test swapAndTransferUnwrappedNatoWithV2
+    function testSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2() public {
+        // give the abacusV0 contract eth
+        cheatCodes.deal(address(this), 9999999999999999999999999);
+
+        //set the path
+        address[] memory path = new address[](2);
+        path[0]=_wnatoAddress;
+        path[1]= swapToken;
+
+        // swap eth for tokens
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
+
+
+        //approve the abacusV0 to interact with the swapToken
+        ERC20(swapToken).approve(address(abacusV0), (2**256-1));
+
+        address lp =_uniV2Factory.getPair(swapToken, _wnatoAddress);
+
+        uint amountIn =mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+
+        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+
+        //calculate the amountOut
+        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+                
+        // swap and transfer unwrapped nato
+        abacusV0.swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(lp, amountIn, amountOut, swapToken);
+    }
+
+
+   function testApproveSwapAndTransferUnwrappedNatoWithV3() public {
+        //for networks with a univ3 interface
+        if (_uniV3Address!=address(0)){
+        // give the abacusV0 contract eth
+        cheatCodes.deal(address(this), 9999999999999999999999999);
+
+        //set the path
+        address[] memory path = new address[](2);
+        path[0]=_wnatoAddress;
+        path[1]= swapToken;
+
+        // swap eth for tokens
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
+
+        //approve the abacusV0 to interact with the swapToken
+        ERC20(swapToken).approve(address(abacusV0), (2**256-1));
+        
+
+        //encode the call data, fee is set to .3%
+        bytes memory _callData = abi.encode(swapToken, 3000, (2**256-1), 10000000000, 1, 0);
+
+
+        // swap and transfer unwrapped nato
+        abacusV0.swapAndTransferUnwrappedNatoWithV3(_callData);
+        }
+    }
 
 
     /// @notice test calculatePayoutLessAbacusFee
