@@ -32,7 +32,6 @@ interface CheatCodes {
     address _wnatoAddress = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address _uniV2Address = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
     address _uniV2FactoryAddress = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
-    address _uniV3Address = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     //initialize the router for testing
     IUniswapV2Router02 _uniV2Router;
     //initialize the univ2factory
@@ -43,7 +42,7 @@ interface CheatCodes {
     address swapTokenFeeOnTransfer = 0x8B3192f5eEBD8579568A2Ed41E6FEB402f93f73F;
 
     function setUp() public {
-         abacusV0 = new AbacusV0(_wnatoAddress, _uniV3Address);
+         abacusV0 = new AbacusV0(_wnatoAddress);
          _uniV2Router=IUniswapV2Router02(_uniV2Address);
          _uniV2Factory=IUniswapV2Factory(_uniV2FactoryAddress);
 
@@ -55,8 +54,6 @@ interface CheatCodes {
         assertEq(abacusV0.wnatoAddress(), _wnatoAddress);
         //test the abacus fee set in the contstructor
         assertEq(abacusV0.abacusFeeMul1000(), 25);
-         //test the univ3 address
-        assertEq(abacusV0.uniV3RouterAddress(), _uniV3Address);
     }
 
 

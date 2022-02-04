@@ -37,8 +37,7 @@ contract AbacusV0 {
 
 /// @notice Constructor to initialize the contract on deployment.
 /// @param _wnatoAddress The wrapped native token address (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
-/// @param _uniV3Router The address of the uniV3 router.
-constructor(address _wnatoAddress, address _uniV3Router){
+constructor(address _wnatoAddress){
    
     /// @notice Set the owner of the contract to the msg.sender that deployed the contract.
     _owner = msg.sender;
