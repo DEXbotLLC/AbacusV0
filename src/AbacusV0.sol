@@ -2,6 +2,7 @@
 pragma solidity >=0.8.10;
 
 import "../lib/IUniswapV2Pair.sol";
+import "../lib/IUniswapV2Factory.sol";
 import "../lib/ISwapRouter.sol";
 import "../lib/WETH.sol";
 
@@ -83,6 +84,13 @@ fallback() external payable {
 }
 
 
+struct SwapCallbackData {
+        bytes path;
+        address payer;
+    }
+
+
+
 /// @notice This function uses a UniV2 compatible router to swap a token for the wrapped native token, unwraps the native token and sends the amountOut minus the abacus fee back to the msg.sender.
 /// @dev To create the abi encoded calldata, simply use abi.encode(_amountIn,_amountOutMin,_tokenToSwap,_deadline).
 /// @param _lp is the v2 liquidity pool address for the _tokenIn and the wrapped native token for the chain.
@@ -94,7 +102,7 @@ fallback() external payable {
 
 /// @dev The uniswapV2 Library usually calculates get amounts out, however this is calculated off chain to save gas
 function swapAndTransferUnwrappedNatoWithV2 (address _lp, uint _amountIn, uint _amountOutMin, address _tokenIn) external {
-    
+
     /// transfer the tokens to the lp
     ERC20(_tokenIn).transferFrom(msg.sender, _lp, _amountIn);
 
@@ -165,8 +173,7 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
     (uint amount0Out, uint amount1Out) = _tokenIn == token0 ? (uint(0), _amountOutMin) : (_amountOutMin, uint(0));
     v2Pair.swap(amount0Out, amount1Out, address(this), new bytes(0));
 //--------------------------------------------------
-
-
+    
     /// @dev Subtract the new balance of wrapped native tokens from the balance before to get the amountRecieved from the swap.
     uint amountRecieved = _wnato.balanceOf(address(this)) - balanceBefore;
 
@@ -235,38 +242,35 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
 }
 
 
+ function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata _data
+    ) external override {
+        require(amount0Delta > 0 || amount1Delta > 0, "!Delta>0"); // swaps entirely within 0-liquidity regions are not supported
+        SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
+        (address tokenIn, address tokenOut, uint24 fee) = data.path.decodeFirstPool();
+        CallbackValidation.verifyCallback(factory, tokenIn, tokenOut, fee);
 
-function approveSwapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external {
-
-    /// @notice Decode the call data.
-    (address _tokenIn, uint24 _fee ,uint256 _deadline, uint256 _amountIn, uint256 _amountOutMinimum, uint160 _sqrtPriceLimitX96) = abi.decode(_callData, (address,uint24,uint256,uint256,uint256,uint160));
-
-    /// @notice Send the tokens to the Abacus contract
-    SafeTransferLib.safeTransferFrom(ERC20(_tokenIn), msg.sender, address(this), _amountIn);
-
-    /// @notice approve the swap router to interact with the token 
-    approveUniV3Router(_tokenIn, (2**256-1));
-    
-    ///@notice Swap exact input tokens for maximum amount of wrapped native tokens.
-    uint amountRecieved = UniV3Router.exactInputSingle(ISwapRouter.ExactInputSingleParams(_tokenIn, wnatoAddress, _fee, address(this), _deadline, _amountIn, _amountOutMinimum, _sqrtPriceLimitX96));
-
-    /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
-    /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
-    /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
-    /// @dev The contract can always send the amountRecieved even when it does not have enough native token balance. The contract will unwrap it's wrapped native tokens and then send the amountRecieved to the user. 
-    if (amountRecieved>address(this).balance){
-        /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
-        _wnato.withdraw(_wnato.balanceOf(address(this)));
-
+        (bool isExactInput, uint256 amountToPay) =
+            amount0Delta > 0
+                ? (tokenIn < tokenOut, uint256(amount0Delta))
+                : (tokenOut < tokenIn, uint256(amount1Delta));
+        if (isExactInput) {
+            pay(tokenIn, data.payer, msg.sender, amountToPay);
+        } else {
+            // either initiate the next swap or pay
+            if (data.path.hasMultiplePools()) {
+                data.path = data.path.skipToken();
+                exactOutputInternal(amountToPay, msg.sender, 0, data);
+            } else {
+                amountInCached = amountToPay;
+                tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
+                pay(tokenIn, data.payer, msg.sender, amountToPay);
+            }
+        }
     }
 
-    /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
-
-    /// @notice Send the payout (amount out less abacus fee) to the msg.sender
-    SafeTransferLib.safeTransferETH(msg.sender, payout);
-
-}
 
 /// @notice Function to calculate abacus fee amount.
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
