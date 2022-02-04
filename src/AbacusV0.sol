@@ -85,10 +85,10 @@ fallback() external payable {
 
 /// @notice This function uses a UniV2 compatible router to swap a token for the wrapped native token, unwraps the native token and sends the amountOut minus the abacus fee back to the msg.sender.
 /// @dev To create the abi encoded calldata, simply use abi.encode(_amountIn,_amountOutMin,_tokenToSwap,_deadline).
-/// @dev _amountIn is the exact amount of tokens you want to swap.
-/// @dev _amountOutMin is the minimum amount of tokens you want resulting from the swap.
-/// @dev _tokenIn is the address of the token that you want to swap from (Ex. When swapping from $LINK to $ETH, _tokenToSwap is the address for $LINK).
-/// @dev _deadline is the unix time after which a swap will fail, to protect against long-pending transactions and wild swings in prices.
+/// @param _lp is the v2 liquidity pool address for the _tokenIn and the wrapped native token for the chain.
+/// @param _amountIn is the exact amount of tokens you want to swap.
+/// @param _amountOutMin is the minimum amount of tokens you want resulting from the swap.
+/// @param _tokenIn is the address of the token that you want to swap from (Ex. When swapping from $LINK to $ETH, _tokenToSwap is the address for $LINK).
 /// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 
