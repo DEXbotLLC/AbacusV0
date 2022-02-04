@@ -71,6 +71,40 @@
         "ISwapRouter"
       ]
     },
+    "/home/machine/dexbot/AbacusV0_Private/lib/IUniswapV2Factory.sol": {
+      "lastModificationDate": 1643911130652,
+      "contentHash": "c1b36b46a276aed7e0954e0036e050c8",
+      "sourceName": "lib/IUniswapV2Factory.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ]
+            }
+          },
+          "evmVersion": "london"
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.5.0"
+      ],
+      "artifacts": [
+        "IUniswapV2Factory"
+      ]
+    },
     "/home/machine/dexbot/AbacusV0_Private/lib/IUniswapV2Pair.sol": {
       "lastModificationDate": 1643839759206,
       "contentHash": "8502aa3fe044adc01d0ec6c09e1b196a",
@@ -351,8 +385,8 @@
       ]
     },
     "/home/machine/dexbot/AbacusV0_Private/src/AbacusV0.sol": {
-      "lastModificationDate": 1643901886193,
-      "contentHash": "e274b37891833f69787a418234c52c16",
+      "lastModificationDate": 1643914776200,
+      "contentHash": "3ab17ba7039d017e21d0eb6023fe6753",
       "sourceName": "src/AbacusV0.sol",
       "solcConfig": {
         "settings": {
@@ -378,7 +412,6 @@
       },
       "imports": [
         "../lib/IUniswapV2Pair.sol",
-        "../lib/IUniswapV2Router02.sol",
         "../lib/ISwapRouter.sol",
         "../lib/WETH.sol"
       ],
@@ -390,8 +423,8 @@
       ]
     },
     "/home/machine/dexbot/AbacusV0_Private/src/test/AbacusV0.t.sol": {
-      "lastModificationDate": 1643902006144,
-      "contentHash": "1d14a9fcbac83a8f23df6dd5636c0d17",
+      "lastModificationDate": 1643914829009,
+      "contentHash": "3dc33e505d5b9d0046ea4668b791fdf7",
       "sourceName": "src/test/AbacusV0.t.sol",
       "solcConfig": {
         "settings": {
@@ -420,6 +453,7 @@
         "../AbacusV0.sol",
         "../../lib/utils/Console.sol",
         "../../lib/IUniswapV2Router02.sol",
+        "../../lib/IUniswapV2Factory.sol",
         "../../lib/ERC20.sol",
         "../../lib/utils/Console.sol"
       ],
