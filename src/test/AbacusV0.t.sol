@@ -123,10 +123,8 @@ interface CheatCodes {
         abacusV0.swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(lp, amountIn, amountOut, swapToken);
     }
 
-
-   function testApproveSwapAndTransferUnwrappedNatoWithV3() public {
-        //for networks with a univ3 interface
-        if (_uniV3Address!=address(0)){
+    /// @notice TODO: test swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2
+    function testApproveSwapAndTransferUnwrappedNatoWithV3() public {
         // give the abacusV0 contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
 
@@ -147,10 +145,8 @@ interface CheatCodes {
 
 
         // swap and transfer unwrapped nato
-        abacusV0.swapAndTransferUnwrappedNatoWithV3(_callData);
-        }
+        abacusV0.approveSwapAndTransferUnwrappedNatoWithV3(_callData);
     }
-
 
     /// @notice test calculatePayoutLessAbacusFee
     function testCalculatePayoutLessAbacusFee() public {
