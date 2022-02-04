@@ -3,12 +3,9 @@ pragma solidity >=0.8.10;
 
 import "../lib/IUniswapV2Pair.sol";
 import "../lib/IUniswapV2Factory.sol";
-import "../lib/IUniswapV3Pool.sol";
-import "../lib/ISwapRouter.sol";
 import "../lib/WETH.sol";
 
 //TODO: set custom fee mapping and a function that is onlyOwner to set the custom fees
-
 
 /// @title AbacusV0. The on-chain logic to trustlessly swap tokens through DEXbot (https://dexbot.io/). 
 /// @author 0xKitsune (https://github.com/0xKitsune)
@@ -17,15 +14,8 @@ import "../lib/WETH.sol";
 /// @dev The DEXbot client source code is open source. You can check out how it works or read the whitepaper here: (https://github.com/DEXbotLLC/DEXbot_Client).
 contract AbacusV0 {
 
-
     /// @notice The EOA address that owns the contract. This is set to the msg.sender initially at deployment. In this contract, the _owner can update the abacus fee (which can never be > 3%), set the abacus wallet or transfer ownership. 
     address private _owner;
-
-    /// @notice Address of the UniV3 router to swap tokens.
-    address public uniV3RouterAddress; 
-
-    /// @notice Instance of the UniV3 router to swap tokens.
-    ISwapRouter UniV3Router;
 
     /// @notice Wrapped native token (WNATO) address for the chain. This address will change depending on the chain the contract is deployed to (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
     address public wnatoAddress;
@@ -62,13 +52,6 @@ constructor(address _wnatoAddress, address _uniV3Router){
     /// @notice Initialize the wrapped ETH contract instance with the wrapped native token address for the chain.
     _wnato=WETH(payable(_wnatoAddress));
 
-    /// @notice Initialize the UniV3Router address.
-    uniV3RouterAddress=_uniV3Router;
-
-    /// @notice Initialize the UniV3Router contract instance.
-    UniV3Router = ISwapRouter(_uniV3Router);
-
-
 }
 
 /// @notice Modifier that checks if the msg.sender is the owner of the contract. The only functions that are set as onlyOwner() are setAbacusFee, setAbacusWallet and transferOwnership.
@@ -83,13 +66,6 @@ receive() external payable {
 
 fallback() external payable {
 }
-
-
-struct SwapCallbackData {
-        bytes path;
-        address payer;
-    }
-
 
 
 /// @notice This function uses a UniV2 compatible router to swap a token for the wrapped native token, unwraps the native token and sends the amountOut minus the abacus fee back to the msg.sender.
@@ -197,92 +173,6 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
 }
 
 
-
-/// @notice This function uses the UniV3 router to swap a token for the wrapped native token, unwraps the native token and sends the amountOut minus the abacus fee back to the msg.sender.
-/// @notice This function utilizes the ISwapRouter.exactInputSingle function which swaps an exact amount of token A for the maximum amount of token B.
-/// @notice Struct to send data to the Uniswap V3 Router exactInputSingle method.
-/// @dev _tokenIn is the contract address of the inbound token.
-/// @dev _fee is the fee tier of the pool, used to determine the correct pool contract in which to execute the swap.
-/// @dev _deadline is the unix time after which a swap will fail, to protect against long-pending transactions and wild swings in prices.
-/// @dev _amountIn is the exact amount of tokens you want to swap.
-/// @dev _amountOutMinimum is the minimum amount of tokens you want resulting from the swap.
-/// @dev _sqrtPriceLimitX96 can be used to set the limit for the price the swap will push the pool to, which can help protect against price impact or for setting up logic in a variety of price-relevant mechanisms/// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
-/// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
-/// @dev IMPORTANT! Always check that the uniV3Address before using this function. Some networks do not have a univ3 interface and the constructor will set this address to 0. 
-/// @dev The DEXbot client accounts for this but if you are calling this function directly, make sure to check the address first.
-function swapAndTransferUnwrappedNatoWithV3 (address _lp, address _tokenIn, uint24 _fee ,uint256 _deadline,uint256 _amountIn, uint256 _amountOutMin, uint160 _sqrtPriceLimitX96) external {
-
-    //TODO: Do we need this?
-    bool zeroForOne = _tokenIn < wnatoAddress;
-
-    //encode the data that will be passed into the callback
-    bytes data = abi.encode(_amountOutMin, );
-
-    //create an instance of the V3Pool
-    IUniswapV3Pool v3Pool = IUniswapV3Pool(_lp);
-    
-    //require that the liquidity pool is with wnato
-    require(v3Pool.token0() == wnatoAddress || v3Pool.token1() == wnatoAddress, "!wnatoLP");
-    //swap with the lp
-    v3Pool.swap(address(this), zeroForOne, _amountIn, _sqrtPriceLimitX96, data);    
-
-
-    /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
-    /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
-    /// @dev This functionality is always trustless and will benefit the end user. When the contract has enough native tokens to send the amountRecieved, the end user does not incur the gas fees of unwrapping.
-    /// @dev The contract can always send the amountRecieved even when it does not have enough native token balance. The contract will unwrap it's wrapped native tokens and then send the amountRecieved to the user. 
-    if (amountRecieved>address(this).balance){
-        /// @notice Unwrap the native token balance on the contract to supply the unwrapped native token
-        _wnato.withdraw(_wnato.balanceOf(address(this)));
-    }
-
-    /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
-
-    /// @notice Send the payout (amount out less abacus fee) to the msg.sender
-    SafeTransferLib.safeTransferETH(msg.sender, payout);
-
-
-
-}
-
-
- function uniswapV3SwapCallback(
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata _data
-    ) external override {
-        require(amount0Delta > 0 || amount1Delta > 0, "!Delta>0"); // swaps entirely within 0-liquidity regions are not supported
-        SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
-
-        // need this so that the function cant just be called
-        (address tokenIn, address tokenOut, uint24 fee) = data.path.decodeFirstPool();
-        CallbackValidation.verifyCallback(factory, tokenIn, tokenOut, fee);
-
-        (bool isExactInput, uint256 amountToPay) = amount0Delta > 0? 
-            (tokenIn < tokenOut, uint256(amount0Delta)) : 
-            (tokenOut < tokenIn, uint256(amount1Delta));
-
-        require (isExactInput, "!ExactInput");
-        pay(tokenIn, data.payer, msg.sender, amountToPay);
-
-
-        // if (isExactInput) {
-        //     pay(tokenIn, data.payer, msg.sender, amountToPay);
-        // } else {
-        //     // either initiate the next swap or pay
-        //     if (data.path.hasMultiplePools()) {
-        //         data.path = data.path.skipToken();
-        //         exactOutputInternal(amountToPay, msg.sender, 0, data);
-        //     } else {
-        //         amountInCached = amountToPay;
-        //         tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
-        //         pay(tokenIn, data.payer, msg.sender, amountToPay);
-        //     }
-        // }
-    }
-
-
 /// @notice Function to calculate abacus fee amount.
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
 function calculatePayoutLessAbacusFee(uint _amountOut, address _address, address _token) public view returns (uint) {
@@ -339,13 +229,6 @@ function checkApproved(address _token, uint _amount)external view returns (bool)
         return true;
     }
 } 
-
-
-
-/// @notice approve univ3 router
-function approveUniV3Router(address _token, uint _amount) private {
-    ERC20(_token).approve(uniV3RouterAddress, _amount);
-}
 
 
 /// @notice returns sorted token addresses, used to handle return values from pairs sorted in this order, taken from univ2library
