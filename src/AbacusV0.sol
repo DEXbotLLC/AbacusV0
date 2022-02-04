@@ -3,6 +3,7 @@ pragma solidity >=0.8.10;
 
 import "../lib/IUniswapV2Pair.sol";
 import "../lib/IUniswapV2Factory.sol";
+import "../lib/IUniswapV3Pool.sol";
 import "../lib/ISwapRouter.sol";
 import "../lib/WETH.sol";
 
@@ -159,7 +160,6 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
     /// @dev It is necessary to get the wrapped native token balance before and after the swap because swapExactTokensForTokensSupportingFeeOnTransferTokens does not return the amountOut from the swap.
     uint balanceBefore = _wnato.balanceOf(address(this));
 
-//--------------------------------------------------
     /// @notice Swap tokens supporting fee on transfer tokens for wrapped native tokens (nato).
     uint amountInput;
 
@@ -172,7 +172,6 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
     }
     (uint amount0Out, uint amount1Out) = _tokenIn == token0 ? (uint(0), _amountOutMin) : (_amountOutMin, uint(0));
     v2Pair.swap(amount0Out, amount1Out, address(this), new bytes(0));
-//--------------------------------------------------
     
     /// @dev Subtract the new balance of wrapped native tokens from the balance before to get the amountRecieved from the swap.
     uint amountRecieved = _wnato.balanceOf(address(this)) - balanceBefore;
@@ -201,8 +200,6 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
 
 /// @notice This function uses the UniV3 router to swap a token for the wrapped native token, unwraps the native token and sends the amountOut minus the abacus fee back to the msg.sender.
 /// @notice This function utilizes the ISwapRouter.exactInputSingle function which swaps an exact amount of token A for the maximum amount of token B.
-/// @param _callData This param is abi encoded bytes containing the ExactInputSingleParams struct required to interact with the ISwapRouter exactInputSingle method.  
-/// @dev To create the abi encoded calldata, simply use abi.encode(_tokenIn,_tokenOut,_fee,_recipient,_deadline,_amountIn,_amountOutMinimum,_sqrtPriceLimitX96).
 /// @notice Struct to send data to the Uniswap V3 Router exactInputSingle method.
 /// @dev _tokenIn is the contract address of the inbound token.
 /// @dev _fee is the fee tier of the pool, used to determine the correct pool contract in which to execute the swap.
@@ -213,16 +210,22 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 /// @dev IMPORTANT! Always check that the uniV3Address before using this function. Some networks do not have a univ3 interface and the constructor will set this address to 0. 
 /// @dev The DEXbot client accounts for this but if you are calling this function directly, make sure to check the address first.
-function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external {
+function swapAndTransferUnwrappedNatoWithV3 (address _lp, address _tokenIn, uint24 _fee ,uint256 _deadline,uint256 _amountIn, uint256 _amountOutMin, uint160 _sqrtPriceLimitX96) external {
 
-    /// @notice Decode the call data.
-    (address _tokenIn, uint24 _fee ,uint256 _deadline,uint256 _amountIn, uint256 _amountOutMinimum, uint160 _sqrtPriceLimitX96) = abi.decode(_callData, (address,uint24,uint256,uint256,uint256,uint160));
+    //TODO: Do we need this?
+    bool zeroForOne = _tokenIn < wnatoAddress;
 
-    /// @notice Send the tokens to the Abacus contract
-    ERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
+    //encode the data that will be passed into the callback
+    bytes data = abi.encode(_amountOutMin, );
 
-    ///@notice Swap exact input tokens for maximum amount of wrapped native tokens.
-    uint amountRecieved = UniV3Router.exactInputSingle(ISwapRouter.ExactInputSingleParams(_tokenIn, wnatoAddress, _fee, address(this), _deadline, _amountIn, _amountOutMinimum, _sqrtPriceLimitX96));
+    //create an instance of the V3Pool
+    IUniswapV3Pool v3Pool = IUniswapV3Pool(_lp);
+    
+    //require that the liquidity pool is with wnato
+    require(v3Pool.token0() == wnatoAddress || v3Pool.token1() == wnatoAddress, "!wnatoLP");
+    //swap with the lp
+    v3Pool.swap(address(this), zeroForOne, _amountIn, _sqrtPriceLimitX96, data);    
+
 
     /// @notice The contract stores the native tokens so that the msg.sender does not have to pay for gas to unwrap WETH. 
     /// @notice If the contract does not have enough of the native token to send the amountRecieved to the msg.sender, the unwrap function will be called on the contract balance.
@@ -239,6 +242,8 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
 
+
+
 }
 
 
@@ -249,26 +254,32 @@ function swapAndTransferUnwrappedNatoWithV3 (bytes calldata _callData) external 
     ) external override {
         require(amount0Delta > 0 || amount1Delta > 0, "!Delta>0"); // swaps entirely within 0-liquidity regions are not supported
         SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
+
+        // need this so that the function cant just be called
         (address tokenIn, address tokenOut, uint24 fee) = data.path.decodeFirstPool();
         CallbackValidation.verifyCallback(factory, tokenIn, tokenOut, fee);
 
-        (bool isExactInput, uint256 amountToPay) =
-            amount0Delta > 0
-                ? (tokenIn < tokenOut, uint256(amount0Delta))
-                : (tokenOut < tokenIn, uint256(amount1Delta));
-        if (isExactInput) {
-            pay(tokenIn, data.payer, msg.sender, amountToPay);
-        } else {
-            // either initiate the next swap or pay
-            if (data.path.hasMultiplePools()) {
-                data.path = data.path.skipToken();
-                exactOutputInternal(amountToPay, msg.sender, 0, data);
-            } else {
-                amountInCached = amountToPay;
-                tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
-                pay(tokenIn, data.payer, msg.sender, amountToPay);
-            }
-        }
+        (bool isExactInput, uint256 amountToPay) = amount0Delta > 0? 
+            (tokenIn < tokenOut, uint256(amount0Delta)) : 
+            (tokenOut < tokenIn, uint256(amount1Delta));
+
+        require (isExactInput, "!ExactInput");
+        pay(tokenIn, data.payer, msg.sender, amountToPay);
+
+
+        // if (isExactInput) {
+        //     pay(tokenIn, data.payer, msg.sender, amountToPay);
+        // } else {
+        //     // either initiate the next swap or pay
+        //     if (data.path.hasMultiplePools()) {
+        //         data.path = data.path.skipToken();
+        //         exactOutputInternal(amountToPay, msg.sender, 0, data);
+        //     } else {
+        //         amountInCached = amountToPay;
+        //         tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
+        //         pay(tokenIn, data.payer, msg.sender, amountToPay);
+        //     }
+        // }
     }
 
 
