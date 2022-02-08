@@ -13,51 +13,30 @@
 
 ## Overview
 
-Description
+The on-chain logic for DEXbot to enable automated, trustless token swaps.
 
-
-## Notes
-
-Potentially batch unwraps to save gas for the end user. Do side by side gas analysis, potentially save this for v1, this can sacrifice decentralization.
-
-Uni v2 links:
-- https://github.com/Uniswap/v2-core/blob/master/contracts/interfaces/IUniswapV2Pair.sol
-
-- https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol
-
-- https://github.com/Uniswap/v2-periphery/blob/master/contracts/UniswapV2Router02.sol
-<br />
 
 ## Functions
 
-### swapAndTransferUnwrappedNatoWithV2LP
+### swapAndTransferUnwrappedNatoWithV2
 Swap tokens and send unwrapped nato to the msg.sender with a Uni V2 LP interface.
 
 ```js
-function swapAndTransferUnwrappedNatoWithV2LP (address _lp) external {
+function swapAndTransferUnwrappedNatoWithV2 (address _lp) external {
 
 }
 ```
 
-### swapAndTransferUnwrappedNatoSupportingFeesOnTransferWithV2LP
+### swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2
 Swap tokens and send unwrapped nato to the msg.sender supporting fee on transfer with a Uni V2 LP interface.
 
 ```js
 
-function swapAndTransferUnwrappedNatoSupportingFeesOnTransferWithV2LP (address _lp) external {
+function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (address _lp) external {
 
 }
 ```
 
-### swapAndTransferUnwrappedNatoWithV3LP
-Swap tokens and send unwrapped nato to the msg.sender with a Uni V3 LP interface.
-
-```js
-
-function swapAndTransferUnwrappedNatoWithV3LP (address _lp) external {
-
-}
-```
 
 <br />
 

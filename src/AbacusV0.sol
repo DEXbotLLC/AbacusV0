@@ -176,7 +176,6 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
 function calculatePayoutLessAbacusFee(uint _amountOut, address _token, bool _customAbacusFee) public view returns (uint) {
 
-
     /// @notice If the address has a custom fee, use the custom fee in the payout calculation, otherwise, use the default abacusFee
     if (_customAbacusFee){
         /// @notice get the custom fee for the user and calculate the payout
