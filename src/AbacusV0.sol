@@ -25,15 +25,16 @@ contract AbacusV0 {
 
     /// @notice After a swap transaction is completed, a small fee is subtracted from the amountOut. This fee is for the off-chain logic/computations to curate automated swap transactions for an externally owned wallet EOA.
     /// @notice During the fee calculation, this value is divided by 1000 to effectively multiply by a decimal (Ex. If abacusFeeMul1000 is 25, then amountOut*(abacusFeeMul1000/1000) is equivalent to amountOut*.025).
-    uint public abacusFeeMul1000;
+    uint public constant ABACUS_FEE_MUL_1000=25;
 
     /// @notice The maximum abacus fee that can be set. 
     /// @notice The max fee is 3% and the abacus fee can never be set above this value.
     /// @notice This value is divided by 1000 during calculations so with the maximum fee being 30, it can be expressed during calculations as MAX_ABACUS_FEE_MUL_1000/1000 which equals 30/1000 or .03 or 3%.
+    /// @dev In future versions of the contract, the abacus fee will be able to change which is the reason for the max fee. In the V0, it will be set as a constant to 25.
     uint constant MAX_ABACUS_FEE_MUL_1000 = 30 ;
  
-    /// @notice Mapping to hold custom abacus fees for specific externally owned wallets to reduce fees for that wallet. Mapping is wallet address -> token address -> custom fee
-    mapping(address => mapping(address => uint256)) public addressToCustomFee;
+    /// @notice Mapping to hold custom abacus fees for specific externally owned wallets to reduce fees for that wallet. Mapping is abi.encode(msg.sender, tokenAddress) -> custom fee
+    mapping(bytes => uint256) public customFees;
 
 /// @notice Constructor to initialize the contract on deployment.
 /// @param _wnatoAddress The wrapped native token address (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
@@ -42,8 +43,6 @@ constructor(address _wnatoAddress){
     /// @notice Set the owner of the contract to the msg.sender that deployed the contract.
     _owner = msg.sender;
 
-    /// @notice Set the initial abacus fee to 2.5%
-    abacusFeeMul1000=25;
 
     /// @notice Initialize the wrapped native token address for the chain.
     wnatoAddress=_wnatoAddress;
@@ -77,7 +76,7 @@ fallback() external payable {
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 
 /// @dev The uniswapV2 Library usually calculates get amounts out, however this is calculated off chain to save gas
-function swapAndTransferUnwrappedNatoWithV2 (address _lp, uint _amountIn, uint _amountOutMin, address _tokenIn) external {
+function swapAndTransferUnwrappedNatoWithV2 (address _lp, uint _amountIn, uint _amountOutMin, address _tokenIn, bool _customAbacusFee) external {
 
     /// transfer the tokens to the lp
     ERC20(_tokenIn).transferFrom(msg.sender, _lp, _amountIn);
@@ -108,8 +107,9 @@ function swapAndTransferUnwrappedNatoWithV2 (address _lp, uint _amountIn, uint _
         _wnato.withdraw(_wnato.balanceOf(address(this)));
     }
 
+
     /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, _tokenIn, _customAbacusFee);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -124,7 +124,7 @@ function swapAndTransferUnwrappedNatoWithV2 (address _lp, uint _amountIn, uint _
 /// @dev _deadline is the unix time after which a swap will fail, to protect against long-pending transactions and wild swings in prices.
 /// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
-function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (address _lp, uint _amountIn, uint _amountOutMin, address _tokenIn) external {
+function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (address _lp, uint _amountIn, uint _amountOutMin, address _tokenIn, bool _customAbacusFee) external {
 
     // transfer the tokens to the lp
     ERC20(_tokenIn).transferFrom(msg.sender, _lp, _amountIn);
@@ -165,7 +165,7 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
     }
 
     /// @notice Calculate the payout less abacus fee.
-    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, msg.sender, _tokenIn);
+    (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, _tokenIn, _customAbacusFee);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
@@ -174,37 +174,44 @@ function swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2 (addres
 
 /// @notice Function to calculate abacus fee amount.
 /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
-function calculatePayoutLessAbacusFee(uint _amountOut, address _address, address _token) public view returns (uint) {
-   
+function calculatePayoutLessAbacusFee(uint _amountOut, address _token, bool _customAbacusFee) public view returns (uint) {
+
+
     /// @notice If the address has a custom fee, use the custom fee in the payout calculation, otherwise, use the default abacusFee
-    uint customFeeMul1000 = addressToCustomFee[_address][_token];
-    if (customFeeMul1000 == 0){
-        uint abacusFee = mulDiv(_amountOut, abacusFeeMul1000, 1000);
-        return ((_amountOut - abacusFee));
+    if (_customAbacusFee){
+        /// @notice get the custom fee for the user and calculate the payout
+        uint customFeeMul1000 = customFees[abi.encode(msg.sender, _token)];
+        if (customFeeMul1000 == 0){
+            uint abacusFee = mulDiv(_amountOut, ABACUS_FEE_MUL_1000, 1000);
+            return ((_amountOut - abacusFee));
+        }else{
+            uint abacusFee = mulDiv(_amountOut, customFeeMul1000, 1000);
+            return ((_amountOut - abacusFee));
+        }
     }else{
-        uint abacusFee = mulDiv(_amountOut, customFeeMul1000, 1000);
-        return ((_amountOut - abacusFee));
+        uint abacusFee = mulDiv(_amountOut, ABACUS_FEE_MUL_1000, 1000);
+        return ((_amountOut - abacusFee));   
     }
 }
 
 
-/// @notice Function to update abacus fee. The fee can be set to any value between 0% and 3%. This contract is hard coded to never be able to set the fee to be greater than 3%
-/// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
-function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
-    require(_abacusFeeMul1000>=0 && _abacusFeeMul1000<MAX_ABACUS_FEE_MUL_1000, "!fee<max");
-    abacusFeeMul1000=_abacusFeeMul1000;
-    /// @dev NOTICE! If you change the abacus fee, it does not change the custom abacus fees, so you must change those separately. This is to avoid large gas fees from looping through lists.
-}
+// /// @notice Function to update abacus fee. The fee can be set to any value between 0% and 3%. This contract is hard coded to never be able to set the fee to be greater than 3%
+// /// @dev The abacus fee is divided by 1000 when calculating the fee amount to effectively use float point calculations.
+// function setAbacusFee(uint _abacusFeeMul1000) external onlyOwner() {
+//     require(_abacusFeeMul1000>=0 && _abacusFeeMul1000<MAX_ABACUS_FEE_MUL_1000, "!fee<max");
+//     abacusFeeMul1000=_abacusFeeMul1000;
+//     /// @dev NOTICE! If you change the abacus fee, it does not change the custom abacus fees, so you must change those separately. This is to avoid large gas fees from looping through lists.
+// }
 
 /// @notice Function to set a custom abacus fee for specific wallet
 function setCustomAbacusFeeForEOA(address _address, address _token, uint _customFeeMul1000) external onlyOwner() {
     require(_customFeeMul1000<=MAX_ABACUS_FEE_MUL_1000);
-    addressToCustomFee[_address][_token] =_customFeeMul1000;
+    customFees[abi.encode(_address, _token)] =_customFeeMul1000;
 }
 
 /// @notice Function to set a custom abacus fee for specific wallet
 function removeCustomAbacusFeeFromEOA(address _address, address _token) external onlyOwner() {
-    delete addressToCustomFee[_address][_token];
+    delete customFees[abi.encode(_address, _token)];
 }
 
 /// @notice Function to withdraw profits in native tokens from the contract.
