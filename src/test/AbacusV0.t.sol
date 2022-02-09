@@ -98,6 +98,48 @@ interface CheatCodes {
         console.log(calculateCallDataGasCost(callData));
     }
 
+
+
+  /// @notice test swapExactTokensForTokens baseline
+    function testSwapExactTokensForETHBaseline() public {
+        // give the abacusV0 contract eth
+        cheatCodes.deal(address(this), 9999999999999999999999999);
+
+        //set the path
+        address[] memory path = new address[](2);
+        path[0]=_wnatoAddress;
+        path[1]= swapToken;
+
+        // swap eth for tokens
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
+
+
+        //approve the abacusV0 to interact with the swapToken
+        ERC20(swapToken).approve(address(_uniV2Address), (2**256-1));
+
+        address lp = _uniV2Factory.getPair(swapToken, _wnatoAddress);
+
+        uint amountIn = mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+
+        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+
+        //calculate the amountOut
+        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+
+
+          //set the path
+        address[] memory swapPath = new address[](2);
+        swapPath[0] = swapToken;
+        swapPath[1] = _wnatoAddress;
+
+        IUniswapV2Router02(_uniV2Address).swapExactTokensForETH(amountIn, amountOut, swapPath, msg.sender, (2**256-1));
+
+        //calculate the gas cost of call data
+        bytes memory callData = abi.encode(amountIn, amountOut, swapPath, msg.sender, (2**256-1));
+        console.logBytes(callData);
+        console.log(calculateCallDataGasCost(callData));
+    }
+
       /// @notice test swap
     function testSwapExactTokensForTokensSupportingFeeOnTransferTokensBaseline() public {
         // give the abacusV0 contract eth
