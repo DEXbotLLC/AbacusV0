@@ -52,7 +52,86 @@ interface CheatCodes {
         //test the wnato address
         assertEq(abacusV0.wnatoAddress(), _wnatoAddress);
         //test the abacus fee set in the contstructor
-        assertEq(abacusV0.abacusFeeMul1000(), 25);
+        assertEq(abacusV0.ABACUS_FEE_MUL_1000(), 25);
+    }
+
+
+
+  /// @notice test swapExactTokensForTokens baseline
+    function testSwapExactTokensForTokensBaseline() public {
+        // give the abacusV0 contract eth
+        cheatCodes.deal(address(this), 9999999999999999999999999);
+
+        //set the path
+        address[] memory path = new address[](2);
+        path[0]=_wnatoAddress;
+        path[1]= swapToken;
+
+        // swap eth for tokens
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
+
+
+        //approve the abacusV0 to interact with the swapToken
+        ERC20(swapToken).approve(address(_uniV2Address), (2**256-1));
+
+        address lp = _uniV2Factory.getPair(swapToken, _wnatoAddress);
+
+        uint amountIn = mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+
+        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+
+        //calculate the amountOut
+        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+
+
+          //set the path
+        address[] memory swapPath = new address[](2);
+        swapPath[0] = swapToken;
+        swapPath[1] = _wnatoAddress;
+
+        IUniswapV2Router02(_uniV2Address).swapExactTokensForTokens(amountIn, amountOut, swapPath, msg.sender, (2**256-1));       
+       
+
+        //calculate the gas cost of call data
+        bytes memory callData = abi.encode(amountIn, amountOut, swapPath, msg.sender, (2**256-1));
+        console.logBytes(callData);
+        console.log(calculateCallDataGasCost(callData));
+    }
+
+      /// @notice test swap
+    function testSwapExactTokensForTokensSupportingFeeOnTransferTokensBaseline() public {
+        // give the abacusV0 contract eth
+        cheatCodes.deal(address(this), 9999999999999999999999999);
+
+        //set the path
+        address[] memory path = new address[](2);
+        path[0]=_wnatoAddress;
+        path[1]= swapToken;
+
+        // swap eth for tokens
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
+
+
+        //approve the abacusV0 to interact with the swapToken
+        ERC20(swapToken).approve(address(_uniV2Address), (2**256-1));
+
+        address lp = _uniV2Factory.getPair(swapToken, _wnatoAddress);
+
+        uint amountIn = mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+
+        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+
+        //calculate the amountOut
+        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+
+
+          //set the path
+        address[] memory swapPath = new address[](2);
+        swapPath[0] = swapToken;
+        swapPath[1] = _wnatoAddress;
+
+        IUniswapV2Router02(_uniV2Address).swapExactTokensForTokensSupportingFeeOnTransferTokens(amountIn, amountOut, swapPath, msg.sender, (2**256-1));       
+       
     }
 
 
@@ -83,7 +162,14 @@ interface CheatCodes {
         uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
                 
         // swap and transfer unwrapped nato
-        abacusV0.swapAndTransferUnwrappedNatoWithV2(lp, amountIn, amountOut, swapToken);
+        abacusV0.swapAndTransferUnwrappedNatoWithV2(lp, amountIn, amountOut, swapToken, false);
+        
+        
+        //calculate the gas cost of call data
+        bytes memory callData = abi.encode(lp, amountIn, amountOut, swapToken, false);
+        console.logBytes(callData);
+        console.log(calculateCallDataGasCost(callData));
+
     }
 
 
@@ -116,18 +202,18 @@ interface CheatCodes {
         uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
                 
         // swap and transfer unwrapped nato
-        abacusV0.swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(lp, amountIn, amountOut, swapToken);
+        abacusV0.swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(lp, amountIn, amountOut, swapToken, false);
     }
 
     /// @notice test calculatePayoutLessAbacusFee
     function testCalculatePayoutLessAbacusFee() public {
-        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, address(0), address(0));
+        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, address(0), false);
         assertEq(payout,44209946);
     }
 
     function testCalculatePayoutLessAbacusFeeWithCustomFee() public {
         abacusV0.setCustomAbacusFeeForEOA(address(this), 0x514910771AF9Ca656af840dff83E8264EcF986CA, 10);
-        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, address(this), 0x514910771AF9Ca656af840dff83E8264EcF986CA);
+        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, 0x514910771AF9Ca656af840dff83E8264EcF986CA, true);
         // console.log(payout);
         assertEq(payout, 44890099);
     }
@@ -135,30 +221,24 @@ interface CheatCodes {
     /// @notice test custom abacus fee for EOA 
         function testsetCustomAbacusFeeForEOA() public {
         abacusV0.setCustomAbacusFeeForEOA(address(this), 0x514910771AF9Ca656af840dff83E8264EcF986CA, 20);
-        assertEq(abacusV0.addressToCustomFee(address(this),0x514910771AF9Ca656af840dff83E8264EcF986CA), 20);
+        assertEq(abacusV0.customFees(abi.encode(address(this),0x514910771AF9Ca656af840dff83E8264EcF986CA)), 20);
     }
 
-    /// @notice test setAbacusFee
-    function testSetAbacusFee() public {
-        abacusV0.setAbacusFee(26);
-        // console.log(abacusV0.abacusFeeMul1000());
-    }
-
-    /// @notice test onlyOwner Modifier
-    function testFailOnlyOwner() public {
-        cheatCodes.prank(address(0));
-        abacusV0.setAbacusFee(26);
-    }
-
-   
 
     /// @notice test removeCustomAbacusFeeFromEOA
     function testRemoveCustomAbacusFeeFromEOA() public {
         address _newAddress = address(this);
         abacusV0.setCustomAbacusFeeForEOA(_newAddress, 0x514910771AF9Ca656af840dff83E8264EcF986CA, 20);
         abacusV0.removeCustomAbacusFeeFromEOA(_newAddress, 0x514910771AF9Ca656af840dff83E8264EcF986CA);
-        assertEq(abacusV0.addressToCustomFee(_newAddress, 0x514910771AF9Ca656af840dff83E8264EcF986CA), 0);
+        assertEq(abacusV0.customFees(abi.encode(_newAddress, 0x514910771AF9Ca656af840dff83E8264EcF986CA)), 0);
     }
+
+       /// @notice test onlyOwner Modifier
+    function testFailOnlyOwner() public {
+        cheatCodes.prank(address(0));
+        abacusV0.setCustomAbacusFeeForEOA(address(this), 0x514910771AF9Ca656af840dff83E8264EcF986CA, 20);
+    }
+
 
     /// @notice test withdrawAbacusProfits
     function testWithdrawAbacusProfits() public {
@@ -177,7 +257,7 @@ interface CheatCodes {
     }
 
 
-    /// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)
+/// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)
 function mulDiv(uint256 x,uint256 y,uint256 denominator) internal pure returns (uint256 z) {
     assembly {
         // Store x * y in z for now.
@@ -196,3 +276,21 @@ function mulDiv(uint256 x,uint256 y,uint256 denominator) internal pure returns (
 
 }
 
+
+/// @notice Function to calculate the gas cost of call data
+function calculateCallDataGasCost(bytes memory _callData) pure returns (uint) {
+    uint i = 0;
+    uint gasCost;
+    uint callDataLength = _callData.length;
+
+    //For each byte in call data, if it is a 0 byte, add 4 gas. Else, add 68 gas.
+    for (i; i<callDataLength; i++){
+        if (_callData[i]==0){
+            gasCost+=4;
+        }else{
+            gasCost+=16;
+        }
+    }
+
+    return gasCost;
+}

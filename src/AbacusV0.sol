@@ -14,7 +14,7 @@ import "../lib/WETH.sol";
 /// @dev The DEXbot client source code is open source. You can check out how it works or read the whitepaper here: (https://github.com/DEXbotLLC/DEXbot_Client).
 contract AbacusV0 {
 
-    /// @notice The EOA address that owns the contract. This is set to the msg.sender initially at deployment. In this contract, the _owner can update the abacus fee (which can never be > 3%), set the abacus wallet or transfer ownership. 
+    /// @notice The EOA address that owns the contract. This is set to the msg.sender initially at deployment. In this contract, the _owner can only add/remove custom fees for specific wallets or transfer ownership of the contract. 
     address private _owner;
 
     /// @notice Wrapped native token (WNATO) address for the chain. This address will change depending on the chain the contract is deployed to (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
@@ -38,6 +38,7 @@ contract AbacusV0 {
 
 /// @notice Constructor to initialize the contract on deployment.
 /// @param _wnatoAddress The wrapped native token address (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
+
 constructor(address _wnatoAddress){
    
     /// @notice Set the owner of the contract to the msg.sender that deployed the contract.
@@ -72,6 +73,7 @@ fallback() external payable {
 /// @param _amountIn is the exact amount of tokens you want to swap.
 /// @param _amountOutMin is the minimum amount of tokens you want resulting from the swap.
 /// @param _tokenIn is the address of the token that you want to swap from (Ex. When swapping from $LINK to $ETH, _tokenToSwap is the address for $LINK).
+/// @param _customAbacusFee boolean that tells the abacus to check for a custom fee. If false, the abacus will use the global abacus fee.
 /// @dev The swap router must be approved for this to function to succeed. Since tokens are never sent to the Abacus contract before the swap, the Abacus does not need to be approved. 
 /// @dev This contract saves gas by only having to send the tokens to the router vs sending tokens to the contract, and then sending tokens to the router.
 
@@ -107,14 +109,14 @@ function swapAndTransferUnwrappedNatoWithV2 (address _lp, uint _amountIn, uint _
         _wnato.withdraw(_wnato.balanceOf(address(this)));
     }
 
-
     /// @notice Calculate the payout less abacus fee.
     (uint payout) = calculatePayoutLessAbacusFee(amountRecieved, _tokenIn, _customAbacusFee);
 
     /// @notice Send the payout (amount out less abacus fee) to the msg.sender
     SafeTransferLib.safeTransferETH(msg.sender, payout);
-}
 
+
+}
 
 /// @notice This function uses a UniV2 compatible router to swap a token supporting fee on transfer tokens for the wrapped native token, unwraps the native token and sends the amountOut minus the abacus fee back to the msg.sender.
 /// @dev To create the abi encoded calldata, simply use abi.encode(_amountIn,_amountOutMin,_tokenToSwap,_deadline).
