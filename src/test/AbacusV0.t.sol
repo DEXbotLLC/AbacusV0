@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity>= 0.8.10;
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity >=0.8.10;
 
 import "../../lib/ds-test/src/test.sol";
 import "../AbacusV0.sol";
@@ -9,23 +9,21 @@ import "../../lib/IUniswapV2Factory.sol";
 
 import "../../lib/ERC20.sol";
 import "../../lib/utils/Console.sol";
- 
+
 /// @dev to test, run `forge test --force -vvv`
 interface CheatCodes {
     function prank(address) external;
+
     function deal(address who, uint256 amount) external;
 }
 
- contract AbacusV0Test is DSTest {
+contract AbacusV0Test is DSTest {
     AbacusV0 abacusV0;
     CheatCodes cheatCodes = CheatCodes(HEVM_ADDRESS);
 
-    receive() external payable {
-    }
+    receive() external payable {}
 
-    fallback() external payable {
-    }
-
+    fallback() external payable {}
 
     /// @notice set constructor variables depending on the network
     /// @notice variables for eth l1
@@ -42,9 +40,9 @@ interface CheatCodes {
     address swapTokenFeeOnTransfer = 0x8B3192f5eEBD8579568A2Ed41E6FEB402f93f73F;
 
     function setUp() public {
-         abacusV0 = new AbacusV0(_wnatoAddress);
-         _uniV2Router=IUniswapV2Router02(_uniV2Address);
-         _uniV2Factory=IUniswapV2Factory(_uniV2FactoryAddress);
+        abacusV0 = new AbacusV0(_wnatoAddress);
+        _uniV2Router = IUniswapV2Router02(_uniV2Address);
+        _uniV2Factory = IUniswapV2Factory(_uniV2FactoryAddress);
     }
 
     /// @notice test public variables
@@ -55,127 +53,177 @@ interface CheatCodes {
         assertEq(abacusV0.ABACUS_FEE_MUL_1000(), 25);
     }
 
-
-
-  /// @notice test swapExactTokensForTokens baseline
+    /// @notice test swapExactTokensForTokens baseline
     function testSwapExactTokensForTokensBaseline() public {
         // give the abacusV0 contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
 
         //set the path
         address[] memory path = new address[](2);
-        path[0]=_wnatoAddress;
-        path[1]= swapToken;
+        path[0] = _wnatoAddress;
+        path[1] = swapToken;
 
         // swap eth for tokens
-        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
-
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(
+            1,
+            path,
+            address(this),
+            (2**256 - 1)
+        );
 
         //approve the abacusV0 to interact with the swapToken
-        ERC20(swapToken).approve(address(_uniV2Address), (2**256-1));
+        ERC20(swapToken).approve(address(_uniV2Address), (2**256 - 1));
 
         address lp = _uniV2Factory.getPair(swapToken, _wnatoAddress);
 
-        uint amountIn = mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+        uint256 amountIn = mulDiv(
+            ERC20(swapToken).balanceOf(address(this)),
+            25,
+            100
+        );
 
-        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(lp)
+            .getReserves();
 
         //calculate the amountOut
-        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+        uint256 amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
 
-
-          //set the path
+        //set the path
         address[] memory swapPath = new address[](2);
         swapPath[0] = swapToken;
         swapPath[1] = _wnatoAddress;
 
-        IUniswapV2Router02(_uniV2Address).swapExactTokensForTokens(amountIn, amountOut, swapPath, msg.sender, (2**256-1));       
-       
+        IUniswapV2Router02(_uniV2Address).swapExactTokensForTokens(
+            amountIn,
+            amountOut,
+            swapPath,
+            msg.sender,
+            (2**256 - 1)
+        );
 
         //calculate the gas cost of call data
-        bytes memory callData = abi.encode(amountIn, amountOut, swapPath, msg.sender, (2**256-1));
+        bytes memory callData = abi.encode(
+            amountIn,
+            amountOut,
+            swapPath,
+            msg.sender,
+            (2**256 - 1)
+        );
         console.logBytes(callData);
         console.log(calculateCallDataGasCost(callData));
     }
 
-
-
-  /// @notice test swapExactTokensForTokens baseline
+    /// @notice test swapExactTokensForTokens baseline
     function testSwapExactTokensForETHBaseline() public {
         // give the abacusV0 contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
 
         //set the path
         address[] memory path = new address[](2);
-        path[0]=_wnatoAddress;
-        path[1]= swapToken;
+        path[0] = _wnatoAddress;
+        path[1] = swapToken;
 
         // swap eth for tokens
-        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
-
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(
+            1,
+            path,
+            address(this),
+            (2**256 - 1)
+        );
 
         //approve the abacusV0 to interact with the swapToken
-        ERC20(swapToken).approve(address(_uniV2Address), (2**256-1));
+        ERC20(swapToken).approve(address(_uniV2Address), (2**256 - 1));
 
         address lp = _uniV2Factory.getPair(swapToken, _wnatoAddress);
 
-        uint amountIn = mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+        uint256 amountIn = mulDiv(
+            ERC20(swapToken).balanceOf(address(this)),
+            25,
+            100
+        );
 
-        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(lp)
+            .getReserves();
 
         //calculate the amountOut
-        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+        uint256 amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
 
-
-          //set the path
+        //set the path
         address[] memory swapPath = new address[](2);
         swapPath[0] = swapToken;
         swapPath[1] = _wnatoAddress;
 
-        IUniswapV2Router02(_uniV2Address).swapExactTokensForETH(amountIn, amountOut, swapPath, msg.sender, (2**256-1));
+        IUniswapV2Router02(_uniV2Address).swapExactTokensForETH(
+            amountIn,
+            amountOut,
+            swapPath,
+            msg.sender,
+            (2**256 - 1)
+        );
 
         //calculate the gas cost of call data
-        bytes memory callData = abi.encode(amountIn, amountOut, swapPath, msg.sender, (2**256-1));
+        bytes memory callData = abi.encode(
+            amountIn,
+            amountOut,
+            swapPath,
+            msg.sender,
+            (2**256 - 1)
+        );
         console.logBytes(callData);
         console.log(calculateCallDataGasCost(callData));
     }
 
-      /// @notice test swap
-    function testSwapExactTokensForTokensSupportingFeeOnTransferTokensBaseline() public {
+    /// @notice test swap
+    function testSwapExactTokensForTokensSupportingFeeOnTransferTokensBaseline()
+        public
+    {
         // give the abacusV0 contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
 
         //set the path
         address[] memory path = new address[](2);
-        path[0]=_wnatoAddress;
-        path[1]= swapToken;
+        path[0] = _wnatoAddress;
+        path[1] = swapToken;
 
         // swap eth for tokens
-        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
-
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(
+            1,
+            path,
+            address(this),
+            (2**256 - 1)
+        );
 
         //approve the abacusV0 to interact with the swapToken
-        ERC20(swapToken).approve(address(_uniV2Address), (2**256-1));
+        ERC20(swapToken).approve(address(_uniV2Address), (2**256 - 1));
 
         address lp = _uniV2Factory.getPair(swapToken, _wnatoAddress);
 
-        uint amountIn = mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+        uint256 amountIn = mulDiv(
+            ERC20(swapToken).balanceOf(address(this)),
+            25,
+            100
+        );
 
-        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(lp)
+            .getReserves();
 
         //calculate the amountOut
-        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+        uint256 amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
 
-
-          //set the path
+        //set the path
         address[] memory swapPath = new address[](2);
         swapPath[0] = swapToken;
         swapPath[1] = _wnatoAddress;
 
-        IUniswapV2Router02(_uniV2Address).swapExactTokensForTokensSupportingFeeOnTransferTokens(amountIn, amountOut, swapPath, msg.sender, (2**256-1));       
-       
+        IUniswapV2Router02(_uniV2Address)
+            .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                amountIn,
+                amountOut,
+                swapPath,
+                msg.sender,
+                (2**256 - 1)
+            );
     }
-
 
     /// @notice test swapAndTransferUnwrappedNatoWithV2
     function testSwapAndTransferUnwrappedNatoWithV2() public {
@@ -184,113 +232,190 @@ interface CheatCodes {
 
         //set the path
         address[] memory path = new address[](2);
-        path[0]=_wnatoAddress;
-        path[1]= swapToken;
+        path[0] = _wnatoAddress;
+        path[1] = swapToken;
 
         // swap eth for tokens
-        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
-
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(
+            1,
+            path,
+            address(this),
+            (2**256 - 1)
+        );
 
         //approve the abacusV0 to interact with the swapToken
-        ERC20(swapToken).approve(address(abacusV0), (2**256-1));
+        ERC20(swapToken).approve(address(abacusV0), (2**256 - 1));
 
-        address lp =_uniV2Factory.getPair(swapToken, _wnatoAddress);
+        address lp = _uniV2Factory.getPair(swapToken, _wnatoAddress);
 
-        uint amountIn =mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+        uint256 amountIn = mulDiv(
+            ERC20(swapToken).balanceOf(address(this)),
+            25,
+            100
+        );
 
-        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(lp)
+            .getReserves();
 
         //calculate the amountOut
-        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
-                
+        uint256 amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+
         // swap and transfer unwrapped nato
-        abacusV0.swapAndTransferUnwrappedNatoWithV2(lp, amountIn, amountOut, swapToken, false);
-        
-        
+        abacusV0.swapAndTransferUnwrappedNatoWithV2(
+            lp,
+            amountIn,
+            amountOut,
+            swapToken,
+            false
+        );
+
         //calculate the gas cost of call data
-        bytes memory callData = abi.encode(lp, amountIn, amountOut, swapToken, false);
+        bytes memory callData = abi.encode(
+            lp,
+            amountIn,
+            amountOut,
+            swapToken,
+            false
+        );
         console.logBytes(callData);
         console.log(calculateCallDataGasCost(callData));
-
     }
 
-
-
-
     /// @notice test swapAndTransferUnwrappedNatoWithV2
-    function testSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2() public {
+    function testSwapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2()
+        public
+    {
         // give the abacusV0 contract eth
         cheatCodes.deal(address(this), 9999999999999999999999999);
 
         //set the path
         address[] memory path = new address[](2);
-        path[0]=_wnatoAddress;
-        path[1]= swapToken;
+        path[0] = _wnatoAddress;
+        path[1] = swapToken;
 
         // swap eth for tokens
-        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(1, path, address(this), (2**256-1));
-
+        _uniV2Router.swapExactETHForTokens{value: 1000000000000000000}(
+            1,
+            path,
+            address(this),
+            (2**256 - 1)
+        );
 
         //approve the abacusV0 to interact with the swapToken
-        ERC20(swapToken).approve(address(abacusV0), (2**256-1));
+        ERC20(swapToken).approve(address(abacusV0), (2**256 - 1));
 
-        address lp =_uniV2Factory.getPair(swapToken, _wnatoAddress);
+        address lp = _uniV2Factory.getPair(swapToken, _wnatoAddress);
 
-        uint amountIn =mulDiv(ERC20(swapToken).balanceOf(address(this)), 25, 100);
+        uint256 amountIn = mulDiv(
+            ERC20(swapToken).balanceOf(address(this)),
+            25,
+            100
+        );
 
-        (uint reserve0, uint reserve1,) = IUniswapV2Pair(lp).getReserves();
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(lp)
+            .getReserves();
 
         //calculate the amountOut
-        uint amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
-                
+        uint256 amountOut = abacusV0.getAmountOut(amountIn, reserve0, reserve1);
+
         // swap and transfer unwrapped nato
-        abacusV0.swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(lp, amountIn, amountOut, swapToken, false);
+        abacusV0
+            .swapAndTransferUnwrappedNatoSupportingFeeOnTransferTokensWithV2(
+                lp,
+                amountIn,
+                amountOut,
+                swapToken,
+                false
+            );
     }
 
     /// @notice test calculatePayoutLessAbacusFee
     function testCalculatePayoutLessAbacusFee() public {
-        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, address(0), false);
-        assertEq(payout,44209946);
+        uint256 payout = abacusV0.calculatePayoutLessAbacusFee(
+            45343534,
+            address(0),
+            false
+        );
+        assertEq(payout, 44209946);
     }
 
     function testCalculatePayoutLessAbacusFeeWithCustomFee() public {
-        abacusV0.setCustomAbacusFeeForEOA(address(this), 0x514910771AF9Ca656af840dff83E8264EcF986CA, 10);
-        uint payout = abacusV0.calculatePayoutLessAbacusFee(45343534, 0x514910771AF9Ca656af840dff83E8264EcF986CA, true);
+        abacusV0.setCustomAbacusFeeForEOA(
+            address(this),
+            0x514910771AF9Ca656af840dff83E8264EcF986CA,
+            10
+        );
+        uint256 payout = abacusV0.calculatePayoutLessAbacusFee(
+            45343534,
+            0x514910771AF9Ca656af840dff83E8264EcF986CA,
+            true
+        );
         // console.log(payout);
         assertEq(payout, 44890099);
     }
 
-    /// @notice test custom abacus fee for EOA 
-        function testsetCustomAbacusFeeForEOA() public {
-        abacusV0.setCustomAbacusFeeForEOA(address(this), 0x514910771AF9Ca656af840dff83E8264EcF986CA, 20);
-        assertEq(abacusV0.customFees(abi.encode(address(this),0x514910771AF9Ca656af840dff83E8264EcF986CA)), 20);
+    /// @notice test custom abacus fee for EOA
+    function testsetCustomAbacusFeeForEOA() public {
+        abacusV0.setCustomAbacusFeeForEOA(
+            address(this),
+            0x514910771AF9Ca656af840dff83E8264EcF986CA,
+            20
+        );
+        assertEq(
+            abacusV0.customFees(
+                abi.encode(
+                    address(this),
+                    0x514910771AF9Ca656af840dff83E8264EcF986CA
+                )
+            ),
+            20
+        );
     }
-
 
     /// @notice test removeCustomAbacusFeeFromEOA
     function testRemoveCustomAbacusFeeFromEOA() public {
         address _newAddress = address(this);
-        abacusV0.setCustomAbacusFeeForEOA(_newAddress, 0x514910771AF9Ca656af840dff83E8264EcF986CA, 20);
-        abacusV0.removeCustomAbacusFeeFromEOA(_newAddress, 0x514910771AF9Ca656af840dff83E8264EcF986CA);
-        assertEq(abacusV0.customFees(abi.encode(_newAddress, 0x514910771AF9Ca656af840dff83E8264EcF986CA)), 0);
+        abacusV0.setCustomAbacusFeeForEOA(
+            _newAddress,
+            0x514910771AF9Ca656af840dff83E8264EcF986CA,
+            20
+        );
+        abacusV0.removeCustomAbacusFeeFromEOA(
+            _newAddress,
+            0x514910771AF9Ca656af840dff83E8264EcF986CA
+        );
+        assertEq(
+            abacusV0.customFees(
+                abi.encode(
+                    _newAddress,
+                    0x514910771AF9Ca656af840dff83E8264EcF986CA
+                )
+            ),
+            0
+        );
     }
 
-       /// @notice test onlyOwner Modifier
+    /// @notice test onlyOwner Modifier
     function testFailOnlyOwner() public {
         cheatCodes.prank(address(0));
-        abacusV0.setCustomAbacusFeeForEOA(address(this), 0x514910771AF9Ca656af840dff83E8264EcF986CA, 20);
+        abacusV0.setCustomAbacusFeeForEOA(
+            address(this),
+            0x514910771AF9Ca656af840dff83E8264EcF986CA,
+            20
+        );
     }
-
 
     /// @notice test withdrawAbacusProfits
     function testWithdrawAbacusProfits() public {
-         // give the abacusV0 contract eth
+        // give the abacusV0 contract eth
         cheatCodes.deal(address(abacusV0), 9999999999999999999999999);
         //transfer eth, abstracted
-        abacusV0.withdrawAbacusProfits(0x53A2C854F3cEA50bD54913649dBB2980D05980ad, 345342334534);
+        abacusV0.withdrawAbacusProfits(
+            0x53A2C854F3cEA50bD54913649dBB2980D05980ad,
+            345342334534
+        );
 
         assertEq(address(abacusV0).balance, 9999999999999654657665465);
-
     }
 
     /// @notice test transferOwnership
@@ -298,39 +423,47 @@ interface CheatCodes {
         abacusV0.transferOwnership(0x53A2C854F3cEA50bD54913649dBB2980D05980ad);
     }
 
+    /// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 denominator
+    ) internal pure returns (uint256 z) {
+        assembly {
+            // Store x * y in z for now.
+            z := mul(x, y)
 
-/// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)
-function mulDiv(uint256 x,uint256 y,uint256 denominator) internal pure returns (uint256 z) {
-    assembly {
-        // Store x * y in z for now.
-        z := mul(x, y)
+            // Equivalent to require(denominator != 0 && (x == 0 || (x * y) / x == y))
+            if iszero(
+                and(
+                    iszero(iszero(denominator)),
+                    or(iszero(x), eq(div(z, x), y))
+                )
+            ) {
+                revert(0, 0)
+            }
 
-        // Equivalent to require(denominator != 0 && (x == 0 || (x * y) / x == y))
-        if iszero(and(iszero(iszero(denominator)), or(iszero(x), eq(div(z, x), y)))) {
-            revert(0, 0)
+            // Divide z by the denominator.
+            z := div(z, denominator)
         }
-
-        // Divide z by the denominator.
-        z := div(z, denominator)
     }
 }
 
-
-}
-
-
 /// @notice Function to calculate the gas cost of call data
-function calculateCallDataGasCost(bytes memory _callData) pure returns (uint) {
-    uint i = 0;
-    uint gasCost;
-    uint callDataLength = _callData.length;
+function calculateCallDataGasCost(bytes memory _callData)
+    pure
+    returns (uint256)
+{
+    uint256 i = 0;
+    uint256 gasCost;
+    uint256 callDataLength = _callData.length;
 
     //For each byte in call data, if it is a 0 byte, add 4 gas. Else, add 68 gas.
-    for (i; i<callDataLength; i++){
-        if (_callData[i]==0){
-            gasCost+=4;
-        }else{
-            gasCost+=16;
+    for (i; i < callDataLength; i++) {
+        if (_callData[i] == 0) {
+            gasCost += 4;
+        } else {
+            gasCost += 16;
         }
     }
 
