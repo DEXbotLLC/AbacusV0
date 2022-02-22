@@ -5,14 +5,12 @@ import "../lib/IUniswapV2Pair.sol";
 import "../lib/IUniswapV2Factory.sol";
 import "../lib/WETH.sol";
 
-//TODO: set custom fee mapping and a function that is onlyOwner to set the custom fees
-
 /// @title AbacusV0. The on-chain logic to trustlessly swap tokens through DEXbot (https://dexbot.io/).
 /// @author 0xKitsune (https://github.com/0xKitsune)
 /// @notice This contract enables DEXbot and other off-chain automated transaction curators to create swaps trustlessly while extracting a fee for off-chain services.
 /// @notice In plain english, DEXbot is an automated way to sell your tokens. This contract allows DEXbot's off-chain logic to create swap transactions and return the payout to the msg.sender trustlessly.
 /// @dev The DEXbot client source code is open source. You can check out how it works or read the whitepaper here: (https://github.com/DEXbotLLC/DEXbot_Client).
-contract AbacusV0 {
+contract DEXbotAbacusV0 {
     /// @notice The EOA address that owns the contract. This is set to the msg.sender initially at deployment. In this contract, the _owner can only add/remove custom fees for specific wallets or transfer ownership of the contract.
     address private _owner;
 

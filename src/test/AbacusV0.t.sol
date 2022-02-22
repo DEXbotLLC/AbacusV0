@@ -17,8 +17,8 @@ interface CheatCodes {
     function deal(address who, uint256 amount) external;
 }
 
-contract AbacusV0Test is DSTest {
-    AbacusV0 abacusV0;
+contract DEXbotAbacusV0Test is DSTest {
+    DEXbotAbacusV0 abacusV0;
     CheatCodes cheatCodes = CheatCodes(HEVM_ADDRESS);
 
     receive() external payable {}
@@ -40,7 +40,7 @@ contract AbacusV0Test is DSTest {
     address swapTokenFeeOnTransfer = 0x8B3192f5eEBD8579568A2Ed41E6FEB402f93f73F;
 
     function setUp() public {
-        abacusV0 = new AbacusV0(_wnatoAddress);
+        abacusV0 = new DEXbotAbacusV0(_wnatoAddress);
         _uniV2Router = IUniswapV2Router02(_uniV2Address);
         _uniV2Factory = IUniswapV2Factory(_uniV2FactoryAddress);
     }
