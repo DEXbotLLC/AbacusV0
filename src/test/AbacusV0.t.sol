@@ -20,6 +20,8 @@ interface CheatCodes {
 contract DEXbotAbacusV0Test is DSTest {
     DEXbotAbacusV0 abacusV0;
     CheatCodes cheatCodes = CheatCodes(HEVM_ADDRESS);
+    uint256 constant MAX_UINT =
+        115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
     receive() external payable {}
 
@@ -330,28 +332,42 @@ contract DEXbotAbacusV0Test is DSTest {
     }
 
     /// @notice test calculatePayoutLessAbacusFee
-    function testCalculatePayoutLessAbacusFee() public {
-        uint256 payout = abacusV0.calculatePayoutLessAbacusFee(
-            45343534,
-            address(0),
-            false
-        );
-        assertEq(payout, 44209946);
+    function testCalculatePayoutLessAbacusFee(uint256 _amountIn) public {
+        /// @notice amountIn can not be greater than the following number because it causes the mulDiv function to overflow when calculating x * y
+        /// @notice the tx will revert if the input is greater than this number
+        if ((_amountIn * 25) / _amountIn == 25) {
+            uint256 payout = abacusV0.calculatePayoutLessAbacusFee(
+                _amountIn,
+                address(0),
+                false
+            );
+            assertEq(payout, (_amountIn - mulDiv(_amountIn, 25, 1000)));
+        }
     }
 
-    function testCalculatePayoutLessAbacusFeeWithCustomFee() public {
-        abacusV0.setCustomAbacusFeeForEOA(
-            address(this),
-            0x514910771AF9Ca656af840dff83E8264EcF986CA,
-            10
-        );
-        uint256 payout = abacusV0.calculatePayoutLessAbacusFee(
-            45343534,
-            0x514910771AF9Ca656af840dff83E8264EcF986CA,
-            true
-        );
-        // console.log(payout);
-        assertEq(payout, 44890099);
+    function testCalculatePayoutLessAbacusFeeWithCustomFee(
+        uint256 _amountIn,
+        uint256 _customFee
+    ) public {
+        if (((_amountIn * _customFee) / _amountIn == _customFee)) {
+            if (_customFee <= 100 && _customFee > 0) {
+                abacusV0.setCustomAbacusFeeForEOA(
+                    address(this),
+                    0x514910771AF9Ca656af840dff83E8264EcF986CA,
+                    _customFee
+                );
+                uint256 payout = abacusV0.calculatePayoutLessAbacusFee(
+                    _amountIn,
+                    0x514910771AF9Ca656af840dff83E8264EcF986CA,
+                    true
+                );
+                console.log(payout);
+                assertEq(
+                    payout,
+                    _amountIn - (mulDiv(_amountIn, _customFee, 1000))
+                );
+            }
+        }
     }
 
     /// @notice test custom abacus fee for EOA
