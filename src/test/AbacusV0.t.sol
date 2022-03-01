@@ -371,7 +371,7 @@ contract DEXbotAbacusV0Test is DSTest {
     }
 
     /// @notice test custom abacus fee for EOA
-    function testsetCustomAbacusFeeForEOA() public {
+    function testSetCustomAbacusFeeForEOA() public {
         abacusV0.setCustomAbacusFeeForEOA(
             address(this),
             0x514910771AF9Ca656af840dff83E8264EcF986CA,
@@ -386,6 +386,34 @@ contract DEXbotAbacusV0Test is DSTest {
             ),
             20
         );
+    }
+
+    /// @notice test checkForCustomFee
+    function testCheckForCustomFee() public {
+        abacusV0.setCustomAbacusFeeForEOA(
+            address(this),
+            0x514910771AF9Ca656af840dff83E8264EcF986CA,
+            10
+        );
+
+        bool customFeeCheck = abacusV0.checkForCustomFee(
+            address(this),
+            0x514910771AF9Ca656af840dff83E8264EcF986CA
+        );
+
+        //check that the custom fee check is true
+        assertEq(customFeeCheck, true);
+    }
+
+    /// @notice test checkForCustomFee
+    function testFailCheckForCustomFee() public {
+        bool customFeeCheck = abacusV0.checkForCustomFee(
+            address(this),
+            0x514910771AF9Ca656af840dff83E8264EcF986CA
+        );
+
+        //check that the custom fee check is true
+        assertEq(customFeeCheck, true);
     }
 
     /// @notice test removeCustomAbacusFeeFromEOA
