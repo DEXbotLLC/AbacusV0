@@ -227,6 +227,8 @@ contract DEXbotAbacusV0 {
     }
 
     /// @notice Function to check if a wallet has a custom fee for a specific token
+    /// @param _wallet The wallet address that the custom fee is for
+    /// @param _token The token that the wallet address has a custom fee for.
     function checkForCustomFee(address _wallet, address _token)
         external
         view
