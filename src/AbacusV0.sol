@@ -226,6 +226,21 @@ contract DEXbotAbacusV0 {
         customFees[abi.encode(_address, _token)] = _customFeeMul1000;
     }
 
+    /// @notice Function to check if a wallet has a custom fee for a specific token
+    function checkForCustomFee(address _wallet, address _token)
+        external
+        view
+        returns (bool)
+    {
+        uint256 customFeeMul1000 = customFees[abi.encode(_wallet, _token)];
+
+        if (customFeeMul1000 != 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     /// @notice Function to set a custom abacus fee for specific wallet
     function removeCustomAbacusFeeFromEOA(address _address, address _token)
         external
