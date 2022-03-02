@@ -10,7 +10,7 @@ import "../lib/WETH.sol";
 /// @notice This contract enables DEXbot and other off-chain automated transaction curators to create swaps trustlessly while extracting a fee for off-chain services.
 /// @notice In plain english, DEXbot is an automated way to sell your tokens. This contract allows DEXbot's off-chain logic to create swap transactions and return the payout to the msg.sender trustlessly.
 /// @dev The DEXbot client source code is open source. You can check out how it works or read the whitepaper here: (https://github.com/DEXbotLLC/DEXbot_Client).
-contract DEXbotAbacusV0 {
+contract AbacusV0 {
     /// @notice The EOA address that owns the contract. This is set to the msg.sender initially at deployment. In this contract, the _owner can only add/remove custom fees for specific wallets or transfer ownership of the contract.
     address private _owner;
 
