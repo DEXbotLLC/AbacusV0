@@ -463,8 +463,15 @@ contract DEXbotAbacusV0Test is DSTest {
     }
 
     /// @notice test transferOwnership
-    function testtransferOwnership() public {
+    function testFailTransferOwnership() public {
         abacusV0.transferOwnership(0x53A2C854F3cEA50bD54913649dBB2980D05980ad);
+
+        //Try to set custom abacus fee, this should fail because the owner is now set to another EOA
+        abacusV0.setCustomAbacusFeeForEOA(
+            0x53A2C854F3cEA50bD54913649dBB2980D05980ad,
+            swapToken,
+            10
+        );
     }
 
     /// @notice Function to calculate fixed point multiplication (from RariCapital/Solmate)
