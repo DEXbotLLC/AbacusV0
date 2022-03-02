@@ -402,7 +402,7 @@ contract DEXbotAbacusV0Test is DSTest {
         );
 
         //check that the custom fee check is true
-        assertEq(customFeeCheck, true);
+        assertTrue(customFeeCheck);
     }
 
     /// @notice test checkForCustomFee
@@ -413,7 +413,7 @@ contract DEXbotAbacusV0Test is DSTest {
         );
 
         //check that the custom fee check is true
-        assertEq(customFeeCheck, true);
+        assertTrue(customFeeCheck);
     }
 
     /// @notice test removeCustomAbacusFeeFromEOA
