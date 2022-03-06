@@ -20,6 +20,9 @@ contract AbacusV0 {
     /// @notice Wrapped ETH contract instance to unwrap WETH to ETH. While this variable is named WETH, it could be any native token depending on the chain the contract is deployed to (Ex. WETH for Ethereum L1, WMATIC for Polygon, WBNB for BSC).
     WETH private _wnato;
 
+    /// @notice Boolean to toggle during function execution to protect against reentrancy
+    bool private _entered;
+
     /// @notice After a swap transaction is completed, a small fee is subtracted from the amountOut. This fee is for the off-chain logic/computations to curate automated swap transactions for an externally owned wallet EOA.
     /// @notice During the fee calculation, this value is divided by 1000 to effectively multiply by a decimal (Ex. If abacusFeeMul1000 is 25, then amountOut*(abacusFeeMul1000/1000) is equivalent to amountOut*.025).
     uint256 public constant ABACUS_FEE_MUL_1000 = 25;
@@ -52,6 +55,14 @@ contract AbacusV0 {
         _;
     }
 
+    /// @notice Modifier to protect against reentrancy
+    modifier reentrancyGuard() {
+        require(!_entered);
+        _entered = true;
+        _;
+        _entered = false;
+    }
+
     receive() external payable {}
 
     fallback() external payable {}
@@ -69,7 +80,7 @@ contract AbacusV0 {
         uint256 _amountOutMin,
         address _tokenIn,
         bool _customAbacusFee
-    ) external {
+    ) external reentrancyGuard {
         /// transfer the tokens to the lp
         ERC20(_tokenIn).transferFrom(msg.sender, _lp, _amountIn);
 
@@ -130,7 +141,7 @@ contract AbacusV0 {
         uint256 _amountOutMin,
         address _tokenIn,
         bool _customAbacusFee
-    ) external {
+    ) external reentrancyGuard {
         // transfer the tokens to the lp
         ERC20(_tokenIn).transferFrom(msg.sender, _lp, _amountIn);
 
