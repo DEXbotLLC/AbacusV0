@@ -57,7 +57,7 @@ contract AbacusV0 {
 
     /// @notice Modifier to protect against reentrancy
     modifier reentrancyGuard() {
-        require(!_entered);
+        require(!_entered, "reentrancy");
         _entered = true;
         _;
         _entered = false;
