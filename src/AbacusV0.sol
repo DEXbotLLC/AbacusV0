@@ -277,6 +277,11 @@ contract AbacusV0 {
         _owner = _newOwner;
     }
 
+    ///@notice unwrap  native tokens stored in the contract (ex. WETH -> ETH)
+    function unwrapWNATO(uint256 _amt) external onlyOwner {
+        _wnato.withdraw(_amt);
+    }
+
     /// @notice Returns sorted token addresses, used to handle return values from pairs sorted in this order. Code from the univ2library.
     function sortTokens(address tokenA, address tokenB)
         internal
